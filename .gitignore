@@ -1,0 +1,21 @@
+# Ignore deep learning weights and models
+backend/trained_weights/
+*.pth
+*.pt
+*.h5
+
+# Ignore output images and visualizations
+backend/output_results/
+*.png
+*.jpg
+*.jpeg
+
+# Python caching
+__pycache__/
+backend/src/__pycache__/
+*.pyc
+
+# Local environments (if you add them later)
+.venv/
+venv/
+env/
