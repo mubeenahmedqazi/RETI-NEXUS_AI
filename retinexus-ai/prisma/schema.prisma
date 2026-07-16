@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://neondb_owner:npg_AuGOctf6L2eX@ep-dry-breeze-ao37kyig.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  password       String
+  name           String
+  role           Role     @default(DOCTOR)
+  hospital       String?
+  phone          String?
+  specialization String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  patients       Patient[] @relation("DoctorPatient")
+  reports        Report[]  @relation("DoctorReports")
+
+  @@map("users")
+}
+
+model Patient {
+  id            String   @id @default(cuid())
+  cnic          String   @unique
+  name          String
+  phone         String
+  age           Int?
+  gender        String?
+  address       String?
+  diabetesLevel String?
+  password      String?  // For patient login
+  doctorId      String?  // ✅ Optional - can be null for self-registered
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  doctor        User?    @relation("DoctorPatient", fields: [doctorId], references: [id])
+  reports       Report[] @relation("PatientReports")
+
+  @@map("patients")
+}
+
+model Report {
+  id            String   @id @default(cuid())
+  patientId     String
+  patientCnic   String
+  patientName   String
+  doctorId      String
+  drGrade       String
+  confidence    Float
+  description   String
+  imageUrl      String
+  imagePublicId String?
+  processedAt   String
+  reportData    Json
+  approved      Boolean  @default(true)
+  approvedAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  patient       Patient  @relation("PatientReports", fields: [patientId], references: [id])
+  doctor        User     @relation("DoctorReports", fields: [doctorId], references: [id])
+
+  @@map("reports")
+}
+
+enum Role {
+  DOCTOR
+  PATIENT
+}
