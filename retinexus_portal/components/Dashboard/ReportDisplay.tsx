@@ -1,0 +1,514 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Download, RotateCcw, Microscope, Eye, Brain, Heart,
+  AlertTriangle, CheckCircle, Image as ImageIcon, Loader2, Check, X, ZoomIn, GitCompare,
+} from 'lucide-react';
+import { ReportData } from '@/types/report';
+import Button from '../Common/Button';
+import { saveReport } from '@/services/api';
+import { toast } from 'react-toastify';
+import ProgressRing from '@/components/ui/ProgressRing';
+import SeverityMeter from '@/components/ui/SeverityMeter';
+import BiomarkerCard from '@/components/ui/BiomarkerCard';
+import CompareSlider from '@/components/ui/CompareSlider';
+import Badge, { gradeToTone } from '@/components/ui/Badge';
+import ClinicalReportHeader from '@/components/ui/ClinicalReportHeader';
+
+interface ReportDisplayProps {
+  report: ReportData;
+  onReset: () => void;
+  hideActions?: boolean;
+  patientCnic?: string;
+  patientName?: string;
+  patientId?: string;
+}
+
+const GRADE_INDEX: Record<string, number> = {
+  'No DR': 0,
+  'Mild NPDR': 1,
+  'Moderate NPDR': 2,
+  'Severe NPDR': 3,
+  PDR: 4,
+};
+
+export default function ReportDisplay({
+  report,
+  onReset,
+  hideActions = false,
+  patientCnic: propPatientCnic,
+  patientName: propPatientName,
+  patientId: propPatientId,
+}: ReportDisplayProps) {
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedLabel, setSelectedLabel] = useState<string>('');
+  const [doctorId, setDoctorId] = useState<string>('');
+  const [patientCnic, setPatientCnic] = useState<string>(propPatientCnic || '');
+  const [patientName, setPatientName] = useState<string>(propPatientName || '');
+  const [patientId, setPatientId] = useState<string>(propPatientId || '');
+  const [showCompare, setShowCompare] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (reportRef.current) {
+      reportRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [report]);
+
+  useEffect(() => {
+    const fetchDoctorInfo = async () => {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const data = await response.json();
+          setDoctorId(data.id || data.doctorId || '');
+        }
+      } catch (error) {
+        console.error('Failed to fetch doctor info:', error);
+      }
+    };
+    fetchDoctorInfo();
+  }, []);
+
+  useEffect(() => {
+    if (!propPatientCnic && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const cnic = params.get('cnic') || params.get('patientCnic') || '';
+      const name = params.get('patientName') || params.get('name') || '';
+      const id = params.get('patientId') || params.get('id') || '';
+
+      if (cnic) setPatientCnic(cnic);
+      if (name) setPatientName(name);
+      if (id) setPatientId(id);
+    }
+  }, [propPatientCnic]);
+
+  const totalLesions = report.lesionCounts?.total ?? report.lesions?.length ?? 0;
+  const gradeNumber = GRADE_INDEX[report.drGrade?.grade || 'No DR'] ?? 0;
+  const confidencePct = (report.drGrade?.confidence || 0) * 100;
+  const riskPct = (report.overallRisk || 0) * 100;
+
+  // Lesion counts (Hard/Soft Exudates, Microaneurysms, Haemorrhages) have their
+  // own card in "Lesion Detection" below — keep them out of the Biomarker Dashboard.
+  const EXCLUDED_FROM_BIOMARKER_DASHBOARD = [
+    'hard exudates',
+    'soft exudates',
+    'microaneurysms',
+    'microaneurysm',
+    'haemorrhages',
+    'hemorrhages',
+    'haemorrhage',
+    'hemorrhage',
+  ];
+  const dashboardBiomarkers = (report.biomarkers || []).filter(
+    (b) => !EXCLUDED_FROM_BIOMARKER_DASHBOARD.includes(b.name?.toLowerCase().trim())
+  );
+
+  const getImageUrl = (filename: string | undefined) => {
+    if (!filename || filename === 'Failed' || filename === 'None' || filename === 'null') {
+      return null;
+    }
+    const cleanFilename = filename.replace(/^.*[\\/]/, '');
+    return `http://127.0.0.1:8000/output_results/${cleanFilename}`;
+  };
+
+  const imageLabels: Record<string, string> = {
+    enhanced: 'Enhanced Image',
+    vessel_mask: 'Vessel Mask',
+    detected_lesions: 'Lesion Detection',
+    gradcam: 'Grad-CAM Heatmap',
+  };
+
+  const handleDownloadPDF = () => {
+    setIsDownloading(true);
+    try {
+      window.print();
+    } catch (error) {
+      console.error('Print failed:', error);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (isApproved) {
+      toast.info('Report already approved!', { position: 'top-right', autoClose: 3000 });
+      return;
+    }
+    if (!patientCnic) {
+      toast.error('Patient CNIC is missing. Please go back and select a patient.', { position: 'top-right', autoClose: 5000 });
+      return;
+    }
+    if (!doctorId) {
+      toast.error('Doctor information not found. Please refresh and try again.', { position: 'top-right', autoClose: 5000 });
+      return;
+    }
+
+    try {
+      setIsApproving(true);
+      const reportData = {
+        patientId: patientId || patientCnic,
+        patientCnic,
+        patientName: patientName || 'Patient',
+        doctorId,
+        drGrade: report.drGrade?.grade || 'Unknown',
+        confidence: report.drGrade?.confidence || 0,
+        description: report.drGrade?.description || '',
+        imageUrl: report.imageUrl || '',
+        processedAt: report.processedAt || new Date().toISOString(),
+        reportData: report,
+        phone: '',
+      };
+
+      const result = await saveReport(reportData);
+
+      if (result.success) {
+        setIsApproved(true);
+        toast.success(`Report approved and saved successfully for ${patientName}!`, { position: 'top-right', autoClose: 4000 });
+      }
+    } catch (error: any) {
+      console.error('Approve error:', error);
+      const errorMessage = error.message || 'Failed to save report. Please try again.';
+      toast.error(errorMessage, { position: 'top-right', autoClose: 6000 });
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const openImagePopup = (url: string, label: string) => {
+    setSelectedImage(url);
+    setSelectedLabel(label);
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeImagePopup = () => {
+    setSelectedImage(null);
+    setSelectedLabel('');
+    document.body.style.overflow = 'auto';
+  };
+
+  const enhancedUrl = getImageUrl(report.images?.enhanced) || (report.imageUrl?.startsWith('http') ? report.imageUrl : null);
+  const gradcamUrl = getImageUrl(report.images?.gradcam);
+
+  return (
+    <>
+      <div ref={reportRef} id="pdf-report-content" className="space-y-6 p-2">
+        <ClinicalReportHeader
+          reportId={report.id}
+          patientId={patientCnic || patientId}
+          patientName={patientName}
+          processedAt={report.processedAt}
+          approved={patientName && patientCnic ? isApproved : undefined}
+        />
+
+        {/* DR Grade + Severity + Confidence */}
+        <div className="surface rounded-2xl p-6 clinical-section">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
+            <Eye className="w-5 h-5 text-[var(--brand-secondary)]" />
+            Diabetic Retinopathy Grade
+          </h3>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>{report.drGrade?.grade || 'N/A'}</p>
+                <Badge tone={gradeToTone(report.drGrade?.grade)}>Grade {gradeNumber}</Badge>
+              </div>
+              <p className="text-sm mt-1" style={{ color: 'var(--muted-foreground)' }}>{report.drGrade?.description || ''}</p>
+
+              <div className="mt-5">
+                <SeverityMeter gradeIndex={gradeNumber} />
+              </div>
+            </div>
+
+            <ProgressRing
+              value={confidencePct}
+              size={110}
+              strokeWidth={8}
+              color="var(--brand-accent)"
+              label={<span className="text-xl">{confidencePct.toFixed(0)}%</span>}
+              sublabel="Confidence"
+            />
+          </div>
+        </div>
+
+        {/* Risk overview */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="surface rounded-2xl p-5 flex items-center gap-4 sm:col-span-1">
+            <ProgressRing
+              value={riskPct}
+              size={78}
+              strokeWidth={7}
+              color={riskPct >= 70 ? '#ef4444' : riskPct >= 40 ? '#f59e0b' : '#10b981'}
+              label={<span className="text-sm font-bold">{riskPct.toFixed(0)}%</span>}
+            />
+            <div>
+              <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Overall Risk</p>
+              <p className="text-xs" style={{ color: 'var(--subtle-foreground)' }}>
+                {riskPct >= 70 ? 'High risk — clinical review advised' : riskPct >= 40 ? 'Moderate risk' : 'Low risk'}
+              </p>
+            </div>
+          </div>
+          <div className="surface rounded-2xl p-5 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-6 h-6 text-amber-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{totalLesions}</p>
+              <p className="text-xs" style={{ color: 'var(--subtle-foreground)' }}>Lesions detected</p>
+            </div>
+          </div>
+          <div className="surface rounded-2xl p-5 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[var(--brand-secondary)]/10 flex items-center justify-center flex-shrink-0">
+              <Brain className="w-6 h-6 text-[var(--brand-secondary)]" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{dashboardBiomarkers.length}</p>
+              <p className="text-xs" style={{ color: 'var(--subtle-foreground)' }}>Biomarkers analyzed</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Biomarkers */}
+        {dashboardBiomarkers.length > 0 && (
+          <div className="surface rounded-2xl p-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
+              <Brain className="w-5 h-5 text-[var(--brand-secondary)]" />
+              Biomarker Dashboard
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              {dashboardBiomarkers.map((biomarker, index) => (
+                <BiomarkerCard key={biomarker.name} biomarker={biomarker} index={index} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Lesion Detection */}
+        <div className="surface rounded-2xl p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
+            <AlertTriangle className="w-5 h-5 text-amber-500" />
+            Lesion Detection ({totalLesions})
+          </h3>
+
+          {report.lesionCounts ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {[
+                { label: 'Haemorrhages', value: report.lesionCounts.haemorrhages, color: '#f97316' },
+                { label: 'Hard Exudates', value: report.lesionCounts.hardExudates, color: '#f59e0b' },
+                { label: 'Soft Exudates', value: report.lesionCounts.softExudates, color: 'var(--brand-secondary)' },
+              ].map((l, i) => (
+                <motion.div
+                  key={l.label}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.06 }}
+                  className="rounded-xl p-4 text-center border transition-all hover:shadow-md"
+                  style={{ borderColor: 'var(--border)' }}
+                >
+                  <p className="text-2xl font-bold" style={{ color: l.color }}>{l.value || 0}</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--subtle-foreground)' }}>{l.label}</p>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6" style={{ color: 'var(--muted-foreground)' }}>
+              <CheckCircle className="w-12 h-12 mx-auto mb-3 text-emerald-500" />
+              <p>No lesions detected</p>
+            </div>
+          )}
+        </div>
+
+        {/* Risk Factors */}
+        {report.riskFactors && report.riskFactors.length > 0 && (
+          <div className="surface rounded-2xl p-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
+              <Heart className="w-5 h-5 text-rose-500" />
+              Risk Factors
+            </h3>
+            <div className="space-y-3">
+              {report.riskFactors.map((factor, index) => {
+                const color = factor.level >= 0.7 ? '#ef4444' : factor.level >= 0.4 ? '#f59e0b' : '#10b981';
+                return (
+                  <div key={index} className="p-3 rounded-xl" style={{ background: 'var(--muted)' }}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>{factor.name}</span>
+                      <span className="text-sm font-bold" style={{ color }}>{(factor.level * 100).toFixed(0)}%</span>
+                    </div>
+                    <p className="text-xs mt-1" style={{ color: 'var(--subtle-foreground)' }}>{factor.description}</p>
+                    <div className="w-full h-1.5 rounded-full overflow-hidden mt-2" style={{ background: 'var(--border)' }}>
+                      <motion.div
+                        className="h-full rounded-full"
+                        style={{ background: color }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${factor.level * 100}%` }}
+                        transition={{ duration: 0.6, delay: index * 0.1 }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Comparison slider — screen only, excluded from the printed/PDF report */}
+        {enhancedUrl && gradcamUrl && (
+          <div className="surface rounded-2xl p-6 no-print">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
+                <GitCompare className="w-5 h-5 text-[var(--brand-secondary)]" />
+                Original vs Grad-CAM Overlay
+              </h3>
+              <button
+                onClick={() => setShowCompare(!showCompare)}
+                className="text-xs text-[var(--brand-secondary)] hover:underline"
+              >
+                {showCompare ? 'Hide' : 'Show'} comparison
+              </button>
+            </div>
+            <AnimatePresence>
+              {showCompare && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+                  <div className="max-w-md mx-auto compare-slider-wrap">
+                    <CompareSlider beforeSrc={enhancedUrl} afterSrc={gradcamUrl} beforeLabel="Original" afterLabel="Grad-CAM" />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
+        {/* Output Images */}
+        {report.images && Object.keys(report.images).length > 0 && (
+          <div className="surface rounded-2xl p-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
+              <ImageIcon className="w-5 h-5 text-[var(--brand-secondary)]" />
+              Analysis Output Images
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 image-output-grid">
+              {Object.entries(report.images).map(([key, filename]) => {
+                const imageUrl = getImageUrl(filename as string);
+
+                if (!imageUrl) {
+                  return (
+                    <div key={key} className="p-4 rounded-xl border text-center" style={{ borderColor: 'var(--border)', background: 'var(--muted)' }}>
+                      <ImageIcon className="w-6 h-6 mx-auto mb-2" style={{ color: 'var(--subtle-foreground)' }} />
+                      <p className="text-xs" style={{ color: 'var(--subtle-foreground)' }}>{imageLabels[key] || key}</p>
+                      <p className="text-xs text-red-500 mt-1">Not available</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <motion.div
+                    key={key}
+                    className="relative rounded-xl overflow-hidden border group cursor-pointer"
+                    style={{ borderColor: 'var(--border)' }}
+                    whileHover={{ scale: 1.04 }}
+                    transition={{ duration: 0.3 }}
+                    onClick={() => openImagePopup(imageUrl, imageLabels[key] || key)}
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={imageLabels[key] || key}
+                      className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-300"
+                      crossOrigin="anonymous"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-3">
+                      <p className="text-xs text-white/90 font-medium">{imageLabels[key] || key.replace('_', ' ')}</p>
+                      <ZoomIn className="w-4 h-4 text-white/80" />
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Image Popup Modal */}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div
+            className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-2xl flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closeImagePopup}
+          >
+            <motion.div
+              className="relative max-w-[90vw] max-h-[90vh]"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="absolute -top-4 -right-4 z-10 p-2 rounded-full bg-red-500/90 hover:bg-red-500 text-white transition-colors duration-300 shadow-xl"
+                onClick={closeImagePopup}
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <div className="rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl">
+                <img src={selectedImage} alt={selectedLabel} className="max-w-[85vw] max-h-[80vh] object-contain" />
+                <div className="p-4 bg-gradient-to-t from-black/90 to-transparent">
+                  <p className="text-white text-lg font-bold text-center">{selectedLabel}</p>
+                  <p className="text-white/40 text-sm text-center mt-1">Click anywhere to close • Press ESC</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Actions */}
+      {!hideActions && (
+        <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
+          <Button
+            variant={isApproved ? 'success' : 'primary'}
+            icon={isApproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            onClick={handleApprove}
+            disabled={isApproving || isApproved || !patientCnic || !doctorId}
+            className="min-w-[160px]"
+            glow={!isApproved}
+          >
+            {isApproving ? 'Saving...' : isApproved ? 'Approved' : 'Approve Report'}
+          </Button>
+
+          <Button
+            variant="secondary"
+            icon={isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            onClick={handleDownloadPDF}
+            disabled={isDownloading}
+            className="min-w-[140px]"
+          >
+            {isDownloading ? 'Generating...' : 'Download PDF'}
+          </Button>
+
+          <Button
+            variant="secondary"
+            icon={<Microscope className="w-4 h-4" />}
+            className="min-w-[160px]"
+            onClick={() => toast.info('Detailed Analysis is coming soon.', { position: 'top-right', autoClose: 3000 })}
+          >
+            Detailed Analysis
+          </Button>
+
+          <Button variant="outline" icon={<RotateCcw className="w-4 h-4" />} onClick={onReset} className="min-w-[140px]">
+            New Scan
+          </Button>
+        </div>
+      )}
+    </>
+  );
+}
