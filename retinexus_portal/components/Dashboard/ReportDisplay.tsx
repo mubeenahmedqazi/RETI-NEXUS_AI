@@ -24,6 +24,8 @@ interface ReportDisplayProps {
   patientCnic?: string;
   patientName?: string;
   patientId?: string;
+  patientAge?: number | string;
+  patientGender?: string;
 }
 
 const GRADE_INDEX: Record<string, number> = {
@@ -41,6 +43,8 @@ export default function ReportDisplay({
   patientCnic: propPatientCnic,
   patientName: propPatientName,
   patientId: propPatientId,
+  patientAge: propPatientAge,
+  patientGender: propPatientGender,
 }: ReportDisplayProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
@@ -51,6 +55,8 @@ export default function ReportDisplay({
   const [patientCnic, setPatientCnic] = useState<string>(propPatientCnic || '');
   const [patientName, setPatientName] = useState<string>(propPatientName || '');
   const [patientId, setPatientId] = useState<string>(propPatientId || '');
+  const [patientAge, setPatientAge] = useState<number | string>(propPatientAge ?? '');
+  const [patientGender, setPatientGender] = useState<string>(propPatientGender || '');
   const [showCompare, setShowCompare] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -82,12 +88,39 @@ export default function ReportDisplay({
       const cnic = params.get('cnic') || params.get('patientCnic') || '';
       const name = params.get('patientName') || params.get('name') || '';
       const id = params.get('patientId') || params.get('id') || '';
+      const age = params.get('patientAge') || params.get('age') || '';
+      const gender = params.get('patientGender') || params.get('gender') || '';
 
       if (cnic) setPatientCnic(cnic);
       if (name) setPatientName(name);
       if (id) setPatientId(id);
+      if (age) setPatientAge(age);
+      if (gender) setPatientGender(gender);
     }
   }, [propPatientCnic]);
+
+  // Always resolve Name/Age/Gender from the patient record matching this CNIC,
+  // so the printed report reflects the real patient — not stale/missing props.
+  useEffect(() => {
+    if (!patientCnic) return;
+    const fetchPatientByCnic = async () => {
+      try {
+        const response = await fetch(`/api/patients/${encodeURIComponent(patientCnic)}`);
+        if (response.ok) {
+          const data = await response.json();
+          const p = data.patient;
+          if (p) {
+            if (p.name) setPatientName(p.name);
+            if (p.age !== undefined && p.age !== null) setPatientAge(p.age);
+            if (p.gender) setPatientGender(p.gender);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to resolve patient by CNIC:', error);
+      }
+    };
+    fetchPatientByCnic();
+  }, [patientCnic]);
 
   const totalLesions = report.lesionCounts?.total ?? report.lesions?.length ?? 0;
   const gradeNumber = GRADE_INDEX[report.drGrade?.grade || 'No DR'] ?? 0;
@@ -120,9 +153,9 @@ export default function ReportDisplay({
 
   const imageLabels: Record<string, string> = {
     enhanced: 'Enhanced Image',
-    vessel_mask: 'Vessel Mask',
+    vessel_mask: 'Vessel Segmentation',
     detected_lesions: 'Lesion Detection',
-    gradcam: 'Grad-CAM Heatmap',
+    gradcam: 'Grad-CAM Visualization',
   };
 
   const handleDownloadPDF = () => {
@@ -201,8 +234,10 @@ export default function ReportDisplay({
       <div ref={reportRef} id="pdf-report-content" className="space-y-6 p-2">
         <ClinicalReportHeader
           reportId={report.id}
-          patientId={patientCnic || patientId}
+          patientCnic={patientCnic}
           patientName={patientName}
+          patientAge={patientAge}
+          patientGender={patientGender}
           processedAt={report.processedAt}
           approved={patientName && patientCnic ? isApproved : undefined}
         />
@@ -297,8 +332,9 @@ export default function ReportDisplay({
           </h3>
 
           {report.lesionCounts ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
+                { label: 'Microaneurysms', value: report.lesionCounts.microaneurysms, color: '#ef4444' },
                 { label: 'Haemorrhages', value: report.lesionCounts.haemorrhages, color: '#f97316' },
                 { label: 'Hard Exudates', value: report.lesionCounts.hardExudates, color: '#f59e0b' },
                 { label: 'Soft Exudates', value: report.lesionCounts.softExudates, color: 'var(--brand-secondary)' },
@@ -324,35 +360,80 @@ export default function ReportDisplay({
           )}
         </div>
 
-        {/* Risk Factors */}
+        {/* Risk Factors — formal clinical assessment table */}
         {report.riskFactors && report.riskFactors.length > 0 && (
-          <div className="surface rounded-2xl p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
+          <div className="surface rounded-2xl p-6 clinical-section">
+            <h3 className="text-lg font-semibold mb-1 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
               <Heart className="w-5 h-5 text-rose-500" />
-              Risk Factors
+              Clinical Risk Factor Assessment
             </h3>
-            <div className="space-y-3">
-              {report.riskFactors.map((factor, index) => {
-                const color = factor.level >= 0.7 ? '#ef4444' : factor.level >= 0.4 ? '#f59e0b' : '#10b981';
-                return (
-                  <div key={index} className="p-3 rounded-xl" style={{ background: 'var(--muted)' }}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>{factor.name}</span>
-                      <span className="text-sm font-bold" style={{ color }}>{(factor.level * 100).toFixed(0)}%</span>
-                    </div>
-                    <p className="text-xs mt-1" style={{ color: 'var(--subtle-foreground)' }}>{factor.description}</p>
-                    <div className="w-full h-1.5 rounded-full overflow-hidden mt-2" style={{ background: 'var(--border)' }}>
-                      <motion.div
-                        className="h-full rounded-full"
-                        style={{ background: color }}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${factor.level * 100}%` }}
-                        transition={{ duration: 0.6, delay: index * 0.1 }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+            <p className="text-xs mb-4" style={{ color: 'var(--subtle-foreground)' }}>
+              Systemic and ocular risk contributors identified from the analyzed scan
+            </p>
+            <div className="rounded-xl overflow-hidden border" style={{ borderColor: 'var(--border)' }}>
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr style={{ background: 'var(--muted)' }}>
+                    <th
+                      className="text-left font-semibold uppercase tracking-wide px-4 py-2.5 text-[10px]"
+                      style={{ color: 'var(--subtle-foreground)' }}
+                    >
+                      Risk Factor
+                    </th>
+                    <th
+                      className="text-left font-semibold uppercase tracking-wide px-4 py-2.5 text-[10px]"
+                      style={{ color: 'var(--subtle-foreground)' }}
+                    >
+                      Clinical Notes
+                    </th>
+                    <th
+                      className="text-right font-semibold uppercase tracking-wide px-4 py-2.5 text-[10px] whitespace-nowrap"
+                      style={{ color: 'var(--subtle-foreground)' }}
+                    >
+                      Severity
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.riskFactors.map((factor, index) => {
+                    const color = factor.level >= 0.7 ? '#ef4444' : factor.level >= 0.4 ? '#f59e0b' : '#10b981';
+                    const tier = factor.level >= 0.7 ? 'High' : factor.level >= 0.4 ? 'Moderate' : 'Low';
+                    return (
+                      <tr
+                        key={index}
+                        className="border-t align-top"
+                        style={{ borderColor: 'var(--border)' }}
+                      >
+                        <td className="px-4 py-3 font-medium whitespace-nowrap" style={{ color: 'var(--foreground)' }}>
+                          {factor.name}
+                        </td>
+                        <td className="px-4 py-3" style={{ color: 'var(--muted-foreground)' }}>
+                          {factor.description}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col items-end gap-1.5 min-w-[110px]">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold uppercase tracking-wide" style={{ color }}>{tier}</span>
+                              <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--foreground)' }}>
+                                {(factor.level * 100).toFixed(0)}%
+                              </span>
+                            </div>
+                            <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+                              <motion.div
+                                className="h-full rounded-full"
+                                style={{ background: color }}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${factor.level * 100}%` }}
+                                transition={{ duration: 0.6, delay: index * 0.1 }}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -408,24 +489,31 @@ export default function ReportDisplay({
                 return (
                   <motion.div
                     key={key}
-                    className="relative rounded-xl overflow-hidden border group cursor-pointer"
+                    className="rounded-xl overflow-hidden border group cursor-pointer"
                     style={{ borderColor: 'var(--border)' }}
-                    whileHover={{ scale: 1.04 }}
+                    whileHover={{ scale: 1.02 }}
                     transition={{ duration: 0.3 }}
                     onClick={() => openImagePopup(imageUrl, imageLabels[key] || key)}
                   >
-                    <img
-                      src={imageUrl}
-                      alt={imageLabels[key] || key}
-                      className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-300"
-                      crossOrigin="anonymous"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-3">
-                      <p className="text-xs text-white/90 font-medium">{imageLabels[key] || key.replace('_', ' ')}</p>
-                      <ZoomIn className="w-4 h-4 text-white/80" />
+                    <div className="relative">
+                      <img
+                        src={imageUrl}
+                        alt={imageLabels[key] || key}
+                        className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-300"
+                        crossOrigin="anonymous"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-start justify-end p-2 no-print">
+                        <ZoomIn className="w-4 h-4 text-white/0 group-hover:text-white/90 transition-colors duration-300" />
+                      </div>
+                    </div>
+                    {/* Always-visible caption — required for both screen and print/PDF output */}
+                    <div className="px-3 py-2 border-t text-center" style={{ borderColor: 'var(--border)', background: 'var(--muted)' }}>
+                      <p className="text-xs font-semibold" style={{ color: 'var(--foreground)' }}>
+                        {imageLabels[key] || key.replace('_', ' ')}
+                      </p>
                     </div>
                   </motion.div>
                 );
@@ -433,6 +521,13 @@ export default function ReportDisplay({
             </div>
           </div>
         )}
+
+        {/* Print-only formal footer — appears once, at the end of the document (last page) */}
+        <div className="hidden print:block report-print-footer text-center pt-4 mt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+          <p className="text-xs italic" style={{ color: 'var(--subtle-foreground)' }}>
+            This is AI Generated Report No signature Needed
+          </p>
+        </div>
       </div>
 
       {/* Image Popup Modal */}

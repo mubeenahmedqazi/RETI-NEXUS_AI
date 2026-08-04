@@ -364,5 +364,10 @@ body {
     max-width: 100% !important;
   }
 
+  #pdf-report-content .report-print-footer {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
   button, .no-print { display: none !important; }
 }

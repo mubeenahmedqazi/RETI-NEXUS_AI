@@ -246,7 +246,16 @@ export default function PatientDetailPage() {
                         style={{ borderColor: 'var(--border)' }}
                       >
                         <div className="p-4 max-h-[500px] overflow-y-auto scrollbar-hide">
-                          <ReportDisplay report={report.reportData} onReset={() => toggleReport(report.id)} hideActions={true} />
+                          <ReportDisplay
+                            report={report.reportData}
+                            onReset={() => toggleReport(report.id)}
+                            hideActions={true}
+                            patientCnic={patient.cnic}
+                            patientName={patient.name}
+                            patientId={patient.id}
+                            patientAge={patient.age}
+                            patientGender={patient.gender}
+                          />
                           <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
                             <Button variant="secondary" size="sm" icon={<Download className="w-4 h-4" />} className="text-xs" onClick={() => window.print()}>
                               Download Report

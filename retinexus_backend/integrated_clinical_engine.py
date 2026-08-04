@@ -102,11 +102,11 @@ class RetiNexusFullPipeline:
         NUM_CLASSES = 5
 
         if base_path is None:
-            self.base_path = os.path.abspath(r"C:\Users\Hp\OneDrive\Desktop\RetiNexus_Phase1")
+            self.base_path = os.path.abspath(r"C:\Users\Hp\OneDrive\Desktop\RetiNexus_AI")
         else:
             self.base_path = os.path.abspath(base_path)
 
-        self.weights_dir = os.path.join(self.base_path, 'backend', 'trained_weights')
+        self.weights_dir = os.path.join(self.base_path, 'retinexus_backend', 'trained_weights')
 
         print("="*75)
         print("[+] RETINEXUS INTEGRATED CLINICAL ENGINE ONLINE (MAX-CONFIDENCE & RISK NET)")

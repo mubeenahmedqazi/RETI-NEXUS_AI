@@ -70,30 +70,10 @@ export default function Logo({
         <div style={{ width: size, height: size }} className="flex-shrink-0">
           <svg viewBox="0 0 1000 1000" width="100%" height="100%">
             <defs>
-              <radialGradient id={id('sclera')} cx="40%" cy="34%" r="85%">
-                <stop offset="0%" stopColor="#FFFFFF" />
-                <stop offset="55%" stopColor="#EDEFF1" />
-                <stop offset="100%" stopColor="#C9CED3" />
-              </radialGradient>
-              <radialGradient id={id('iris')} cx="42%" cy="36%" r="68%">
-                <stop offset="0%" stopColor="#C9CED3" />
-                <stop offset="30%" stopColor="#8A919A" />
-                <stop offset="72%" stopColor="#4B515A" />
-                <stop offset="100%" stopColor="#20242A" />
-              </radialGradient>
-              <radialGradient id={id('pupil')} cx="38%" cy="32%" r="75%">
-                <stop offset="0%" stopColor="#4A5058" />
-                <stop offset="60%" stopColor="#20242A" />
-                <stop offset="100%" stopColor="#0C0E11" />
-              </radialGradient>
               <linearGradient id={id('lid')} x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stopColor="#C9CED3" />
                 <stop offset="100%" stopColor="#8A919A" />
               </linearGradient>
-              <radialGradient id={id('corneaShade')} cx="50%" cy="30%" r="70%">
-                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.5" />
-                <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
-              </radialGradient>
               <clipPath id={id('eyeClip')}>
                 <path d={EYE_PATH} />
               </clipPath>
@@ -106,18 +86,14 @@ export default function Logo({
             </defs>
 
             <g clipPath={`url(#${id('eyeClip')})`}>
-              <rect x="90" y="220" width="820" height="560" fill={`url(#${id('sclera')})`} />
-              <ellipse cx="500" cy="720" rx="380" ry="90" fill="#8A919A" opacity="0.16" />
-              <ellipse cx="500" cy="290" rx="360" ry="70" fill="#8A919A" opacity="0.12" />
-              <circle cx="500" cy="500" r="205" fill={`url(#${id('iris')})`} />
-              <circle cx="500" cy="500" r="205" fill="none" stroke="#22C6D9" strokeWidth="6" strokeOpacity="0.9" />
-              <circle cx="500" cy="500" r="205" fill="none" stroke="#22C6D9" strokeWidth="14" strokeOpacity="0.18" />
-              <circle cx="500" cy="500" r="222" fill="none" stroke="#22C6D9" strokeWidth="2" strokeOpacity="0.4" strokeDasharray="2 10" />
-              <circle cx="500" cy="500" r="92" fill={`url(#${id('pupil')})`} />
-              <ellipse cx="500" cy="500" rx="205" ry="205" fill={`url(#${id('corneaShade')})`} />
-              <ellipse cx="435" cy="430" rx="46" ry="30" fill="#FFFFFF" opacity="0.95" transform="rotate(-20 435 430)" />
-              <ellipse cx="470" cy="470" rx="18" ry="12" fill="#FFFFFF" opacity="0.55" transform="rotate(-20 470 470)" />
-              <ellipse cx="580" cy="560" rx="14" ry="9" fill="#FFFFFF" opacity="0.3" />
+              <image
+                href="/logo.png"
+                x="57"
+                y="198"
+                width="886"
+                height="605"
+                preserveAspectRatio="xMidYMid slice"
+              />
 
               {animated && (
                 <>
@@ -132,8 +108,6 @@ export default function Logo({
                 </>
               )}
             </g>
-
-            <path d={EYE_PATH} fill="none" stroke="#22C6D9" strokeWidth="10" strokeOpacity="0.95" />
           </svg>
         </div>
 

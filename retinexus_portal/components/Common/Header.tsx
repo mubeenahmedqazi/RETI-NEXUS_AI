@@ -38,7 +38,7 @@ export default function Header() {
     >
       <div className="flex items-center justify-between px-4 md:px-6 py-2.5">
         <div className="flex items-center gap-2.5 flex-1 ml-10 lg:ml-0">
-          <Logo size={40} animated={false} withWordmark className="lg:hidden" />
+          <Logo size={48} animated={false} withWordmark className="lg:hidden" />
         </div>
         <div className="flex items-center gap-2 md:gap-3">
           <button className="p-2 rounded-xl hover:bg-[var(--muted)] transition-colors duration-300 relative">

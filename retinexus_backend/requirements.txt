@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+python-multipart
+python-dotenv
+requests
+
+numpy
+pandas
+scipy
+scikit-image
+opencv-python-headless
+Pillow
+
+segmentation-models-pytorch
+timm
+ultralytics

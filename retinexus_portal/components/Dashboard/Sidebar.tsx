@@ -74,24 +74,25 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
   return (
     <motion.aside
-      className={`fixed left-0 top-0 h-full z-50 overflow-hidden border-r`}
+      className={`fixed left-0 top-0 h-full z-50 overflow-hidden border-r rounded-r-[22px]`}
       style={{
         width: isOpen ? 240 : 70,
         background: 'var(--sidebar-bg)',
         borderColor: 'var(--border)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
+        boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
       }}
       initial={{ x: -240 }}
       animate={{ x: 0 }}
       transition={{ duration: 0.5, type: 'spring', stiffness: 100, damping: 20 }}
     >
       {/* Logo Section — eye on the left, wordmark/tagline on the right, one rounded cyan frame */}
-      <div className="flex items-center justify-center py-4 border-b relative" style={{ borderColor: 'var(--border)' }}>
+      <div className="flex items-center justify-center py-5 border-b relative" style={{ borderColor: 'var(--border)' }}>
         <Link href="/dashboard" className="flex items-center justify-center">
           <motion.div whileHover={{ scale: 1.04 }} transition={{ duration: 0.3 }}>
             {isOpen ? (
-              <Logo size={42} withWordmark withTagline />
+              <Logo size={48} withWordmark withTagline />
             ) : (
               <Logo size={44} />
             )}
@@ -100,7 +101,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="px-2 py-3 space-y-0.5 relative h-[calc(100%-220px)] overflow-y-auto scrollbar-thin">
+      <nav className="px-3 py-4 space-y-1 relative h-[calc(100%-236px)] overflow-y-auto scrollbar-thin">
         {menuItems.map((item, index) => {
           const isActive = isActiveLink(item.href);
           return (
@@ -113,7 +114,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             >
               <Link href={item.href} className="relative block">
                 <motion.div
-                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-300 cursor-pointer group ${
+                  className={`flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all duration-300 cursor-pointer group ${
                     isActive
                       ? 'bg-gradient-to-r from-[var(--brand-secondary)]/12 to-[var(--brand-accent)]/12 border'
                       : 'hover:bg-[var(--muted)] border border-transparent'
@@ -153,7 +154,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
       {/* Bottom Section */}
       <div
-        className={`absolute bottom-0 left-0 right-0 p-3 border-t ${isOpen ? '' : 'flex flex-col items-center'}`}
+        className={`absolute bottom-0 left-0 right-0 p-4 border-t ${isOpen ? '' : 'flex flex-col items-center'}`}
         style={{ borderColor: 'var(--border)' }}
       >
         {isOpen ? (
@@ -167,7 +168,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             </div>
 
             <button
-              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg hover:bg-[var(--muted)] transition-all duration-300 text-sm group"
+              className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-xl hover:bg-[var(--muted)] transition-all duration-300 text-sm group"
               style={{ color: 'var(--muted-foreground)' }}
               onClick={() => router.push('/dashboard/settings')}
             >
@@ -176,7 +177,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             </button>
 
             <button
-              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg hover:bg-red-500/10 transition-all duration-300 text-sm text-[var(--muted-foreground)] hover:text-red-500 group"
+              className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-xl hover:bg-red-500/10 transition-all duration-300 text-sm text-[var(--muted-foreground)] hover:text-red-500 group"
               onClick={handleLogout}
               disabled={isLoggingOut}
             >
@@ -190,14 +191,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               {doctorName.charAt(0).toUpperCase()}
             </div>
             <button
-              className="flex justify-center p-2 rounded-lg hover:bg-[var(--muted)] transition-all duration-300 w-full"
+              className="flex justify-center p-2 rounded-xl hover:bg-[var(--muted)] transition-all duration-300 w-full"
               style={{ color: 'var(--muted-foreground)' }}
               onClick={() => router.push('/dashboard/settings')}
             >
               <Settings className="w-4 h-4" />
             </button>
             <button
-              className="flex justify-center p-2 rounded-lg hover:bg-red-500/10 transition-all duration-300 text-[var(--muted-foreground)] hover:text-red-500 w-full"
+              className="flex justify-center p-2 rounded-xl hover:bg-red-500/10 transition-all duration-300 text-[var(--muted-foreground)] hover:text-red-500 w-full"
               onClick={handleLogout}
               disabled={isLoggingOut}
             >

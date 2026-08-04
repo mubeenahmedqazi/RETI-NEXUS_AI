@@ -15,10 +15,26 @@ export default function PatientReportsPage() {
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
+  const [patientAge, setPatientAge] = useState<number | undefined>(undefined);
+  const [patientGender, setPatientGender] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     loadReports();
+    loadPatientInfo();
   }, []);
+
+  const loadPatientInfo = async () => {
+    try {
+      const response = await fetch('/api/auth/me', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        setPatientAge(data.age);
+        setPatientGender(data.gender);
+      }
+    } catch (error) {
+      console.error('Failed to fetch patient info:', error);
+    }
+  };
 
   const loadReports = async () => {
     try {
@@ -122,7 +138,16 @@ export default function PatientReportsPage() {
                       style={{ borderColor: 'var(--border)' }}
                     >
                       <div className="p-6 max-h-[600px] overflow-y-auto scrollbar-hide">
-                        <ReportDisplay report={report.reportData} onReset={() => toggleReport(report.id)} hideActions={true} />
+                        <ReportDisplay
+                          report={report.reportData}
+                          onReset={() => toggleReport(report.id)}
+                          hideActions={true}
+                          patientCnic={report.patientCnic}
+                          patientName={report.patientName}
+                          patientId={report.patientId}
+                          patientAge={patientAge}
+                          patientGender={patientGender}
+                        />
                         <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
                           <Button variant="secondary" size="sm" icon={<Download className="w-4 h-4" />} className="text-xs" onClick={() => window.print()}>Download Report</Button>
                           <Button variant="secondary" size="sm" icon={<Share2 className="w-4 h-4" />} className="text-xs">Share</Button>

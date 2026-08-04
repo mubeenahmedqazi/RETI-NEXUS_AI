@@ -1,13 +1,13 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ScanEye } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Logo from './Logo';
 
 const SIZE_MAP = {
-  sm: { ring: 22, mask: 3, icon: 10 },
-  md: { ring: 44, mask: 5, icon: 18 },
-  lg: { ring: 72, mask: 7, icon: 28 },
+  sm: { ring: 22, mask: 3, icon: 16 },
+  md: { ring: 44, mask: 5, icon: 28 },
+  lg: { ring: 72, mask: 7, icon: 44 },
 };
 
 interface LoaderProps {
@@ -38,7 +38,7 @@ export default function Loader({ size = 'md', label, className }: LoaderProps) {
           animate={{ scale: [0.85, 1, 0.85], opacity: [0.6, 1, 0.6] }}
           transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <ScanEye style={{ width: icon, height: icon, color: 'var(--brand-secondary)' }} />
+          <Logo size={icon} />
         </motion.div>
       </div>
       {label && (

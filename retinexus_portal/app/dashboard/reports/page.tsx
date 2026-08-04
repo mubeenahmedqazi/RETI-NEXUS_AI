@@ -26,6 +26,12 @@ interface SavedReport {
   approvedAt: string;
   createdAt: string;
   reportData: ReportData;
+  patient?: {
+    cnic?: string;
+    name?: string;
+    age?: number;
+    gender?: string;
+  };
 }
 
 export default function ReportsPage() {
@@ -179,7 +185,16 @@ export default function ReportsPage() {
               </div>
 
               <div className="flex-1 overflow-y-auto scrollbar-hide p-6">
-                <ReportDisplay report={selectedReport.reportData} onReset={closeReportModal} hideActions={true} />
+                <ReportDisplay
+                  report={selectedReport.reportData}
+                  onReset={closeReportModal}
+                  hideActions={true}
+                  patientCnic={selectedReport.patient?.cnic || selectedReport.patientId}
+                  patientName={selectedReport.patient?.name || selectedReport.patientName}
+                  patientId={selectedReport.patientId}
+                  patientAge={selectedReport.patient?.age}
+                  patientGender={selectedReport.patient?.gender}
+                />
                 <div className="flex justify-center mt-8 pb-2">
                   <Button variant="outline" icon={<X className="w-4 h-4" />} onClick={closeReportModal} className="min-w-[140px]">
                     Close Report

@@ -86,25 +86,17 @@ export default function Hero() {
             <div className="relative mx-auto w-full max-w-md aspect-square">
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[var(--brand-secondary)]/20 to-[var(--brand-accent)]/20 blur-2xl animate-glow-pulse" />
               <div className="relative w-full h-full rounded-full backdrop-blur-md bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 p-3 shadow-2xl">
-                <div className="relative w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-red-950 via-rose-900 to-amber-950">
-                  <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full opacity-70">
-                    <g stroke="#7f1d1d" strokeWidth="1.6" fill="none" opacity="0.8">
-                      <path d="M100 100 C 70 70, 40 60, 20 40" />
-                      <path d="M100 100 C 130 70, 160 60, 180 40" />
-                      <path d="M100 100 C 70 130, 40 150, 15 165" />
-                      <path d="M100 100 C 130 130, 165 150, 185 165" />
-                      <path d="M100 100 C 100 60, 95 30, 90 5" />
-                      <path d="M100 100 C 100 140, 108 170, 115 195" />
-                    </g>
-                  </svg>
+                <div className="relative w-full h-full rounded-full overflow-hidden">
+                  <img
+                    src="/Eyeball.png"
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
                   <motion.div
                     className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"
                     animate={{ top: ['5%', '95%', '5%'] }}
                     transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                   />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-14 h-14 rounded-full bg-amber-200/90 shadow-[0_0_40px_10px_rgba(251,191,36,0.4)]" />
-                  </div>
                   {[
                     { top: '30%', left: '62%' },
                     { top: '68%', left: '35%' },

@@ -32,7 +32,7 @@ export default function AuthShell({
         <div className="absolute bottom-0 right-0 w-[28rem] h-[28rem] rounded-full bg-[var(--brand-accent)]/20 blur-3xl animate-blob" style={{ animationDelay: '2s' }} />
 
         <Link href="/" className="relative z-10 inline-flex">
-          <Logo size={54} withWordmark withTagline wordmarkColor="#FFFFFF" taglineColor="rgba(103,232,249,0.7)" />
+          <Logo size={48} withWordmark withTagline wordmarkColor="#FFFFFF" taglineColor="rgba(103,232,249,0.7)" />
         </Link>
 
         <div className="relative z-10">
@@ -87,7 +87,7 @@ export default function AuthShell({
           className="w-full max-w-md relative"
         >
           <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
-            <Logo size={54} withWordmark withTagline />
+            <Logo size={48} withWordmark withTagline />
           </div>
 
           <div className="mb-7">

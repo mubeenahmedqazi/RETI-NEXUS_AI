@@ -12,7 +12,7 @@ function formatDate(value?: string) {
 
 interface ClinicalReportHeaderProps {
   reportId?: string;
-  patientId?: string;
+  patientCnic?: string;
   patientName?: string;
   patientAge?: number | string;
   patientGender?: string;
@@ -20,51 +20,36 @@ interface ClinicalReportHeaderProps {
   approved?: boolean;
 }
 
-/** Formal clinical-lab header block: facility branding + patient demographics + order/imaging metadata. Renders on screen and print/PDF. */
+/** Formal clinical-lab header block: facility branding + patient demographics. Renders on screen and print/PDF. */
 export default function ClinicalReportHeader({
-  reportId,
-  patientId,
+  patientCnic,
   patientName,
   patientAge,
   patientGender,
   processedAt,
   approved,
 }: ClinicalReportHeaderProps) {
-  const orderId = reportId ? reportId.slice(-10).toUpperCase() : 'PENDING';
-
   return (
     // Hidden on screen (kept out of the normal report view) but restored for print/PDF export.
     <div className="clinical-report-header surface rounded-2xl overflow-hidden hidden print:block">
-      {/* Facility header */}
+      {/* Facility header — real brand lockup (icon + "RetiNexus AI" wordmark) */}
       <div className="flex items-center justify-between gap-4 px-6 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
-        <div className="flex items-center gap-3">
-          <Logo size={46} animated={false} />
-          <div>
-            <p className="font-bold leading-tight" style={{ color: 'var(--foreground)' }}>RetiNexus AI Clinical Screening Center</p>
-            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>AI-Assisted Diabetic Retinopathy Diagnostic Report</p>
-          </div>
-        </div>
+        <Logo size={48} animated={false} withWordmark />
         <div className="flex items-center gap-4">
           {approved !== undefined && (
             <Badge tone={approved ? 'success' : 'warning'}>{approved ? 'Approved' : 'Pending Approval'}</Badge>
           )}
-          <div className="text-right hidden sm:block">
-            <p className="text-xs" style={{ color: 'var(--subtle-foreground)' }}>Order ID</p>
-            <p className="text-sm font-mono font-semibold" style={{ color: 'var(--foreground)' }}>{orderId}</p>
-          </div>
         </div>
       </div>
 
-      {/* Patient demographics + order/imaging metadata */}
+      {/* Patient demographics */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3 px-6 py-4">
-        <Field label="Patient ID" value={patientId || 'N/A'} />
+        <Field label="Patient CNIC" value={patientCnic || 'N/A'} />
         <Field label="Patient Name" value={patientName || 'N/A'} />
         <Field label="Age" value={patientAge ?? 'N/A'} />
         <Field label="Gender" value={patientGender || 'N/A'} />
         <Field label="Referral / Scan Date" value={formatDate(processedAt)} />
         <Field label="Report Generated" value={formatDate(new Date().toISOString())} />
-        <Field label="Imaging Modality" value="Digital Fundus Photography" />
-        <Field label="Analysis Engine" value="RetiNexus AI Vision Pipeline" />
       </div>
     </div>
   );
