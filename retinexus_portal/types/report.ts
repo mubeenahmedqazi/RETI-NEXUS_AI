@@ -66,4 +66,13 @@ export interface ReportData {
   overallRisk: number;
   recommendations: string[];
   processedAt: string;
+  /** Ophthalmologist-style clinical interpretation paragraph (covers the eye/DR finding). */
+  interpretation?: string;
+  /** Short clinical notes for the systemic organs discussed in the report. */
+  organInterpretation?: {
+    heart?: string;
+    kidney?: string;
+    brain?: string;
+  };
+  clinicalReport?: string;
 }

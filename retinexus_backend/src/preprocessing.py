@@ -108,11 +108,11 @@ def extract_vessel_features(binary_mask):
     # ── MORPHOLOGICAL CLEANUP ────────────────────────────────
     # Small noise dots hatao — sirf real vessels rakhao
     binary_bool = mask_f.astype(bool)
-    binary_bool = morphology.remove_small_objects(binary_bool, min_size=200)
-    binary_bool = morphology.remove_small_holes(binary_bool, area_threshold=200)
+    binary_bool = morphology.remove_small_objects(binary_bool, max_size=200)
+    binary_bool = morphology.remove_small_holes(binary_bool, max_size=200)
 
     # Slight closing — vessel gaps fill karo
-    binary_bool = morphology.binary_closing(binary_bool, disk(2))
+    binary_bool = morphology.closing(binary_bool, disk(2))
 
     # ── SKELETON ─────────────────────────────────────────────
     skeleton = skeletonize(binary_bool).astype(np.uint8)

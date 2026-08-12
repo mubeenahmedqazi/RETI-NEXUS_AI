@@ -1,0 +1,90 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
+import ScrollReveal from '@/components/ScrollReveal';
+
+interface PageHeroProps {
+  eyebrow: string;
+  title: string;
+  description: string;
+  /** Optional photo background (e.g. for About) — dot-grid/blobs still render on top. */
+  backgroundImage?: string;
+  /** Optional slow-motion looping video background (e.g. for How It Works) instead of a static photo. */
+  backgroundVideo?: string;
+}
+
+/** Compact banner used at the top of standalone sub-pages (About, How It Works). */
+export default function PageHero({ title, description, backgroundImage, backgroundVideo }: PageHeroProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    video.muted = true;
+    video.defaultMuted = true;
+
+    const start = () => {
+      video.playbackRate = 0.45;
+      if (!mq.matches) video.play().catch(() => {});
+    };
+
+    if (video.readyState >= 2) start();
+    else video.addEventListener('loadeddata', start, { once: true });
+
+    return () => video.removeEventListener('loadeddata', start);
+  }, []);
+
+  const isImmersive = Boolean(backgroundVideo || backgroundImage);
+
+  return (
+    <section
+      className={`relative z-0 isolate px-6 overflow-hidden border-b ${isImmersive ? 'pt-52 sm:pt-56 pb-28 min-h-[70vh] sm:min-h-[85vh] flex items-center' : 'pt-44 sm:pt-48 pb-20'}`}
+      style={{ borderColor: 'var(--border)' }}
+    >
+      {backgroundVideo && (
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <video
+            ref={videoRef}
+            className="absolute inset-0 w-full h-full object-cover opacity-60 dark:opacity-50"
+            src={backgroundVideo}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            tabIndex={-1}
+            aria-hidden="true"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[var(--background)] via-transparent to-[var(--background)]" />
+        </div>
+      )}
+      {backgroundImage && (
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${backgroundImage}')` }} />
+          <div className="absolute inset-0 bg-gradient-to-b from-[var(--background)]/70 via-transparent to-[var(--background)]/70" />
+        </div>
+      )}
+      <div className="absolute inset-0 z-[1] bg-dot-grid opacity-60 pointer-events-none" />
+      <div className="absolute inset-0 z-[1] bg-gradient-to-b from-[var(--brand-secondary)]/[0.04] via-transparent to-transparent pointer-events-none" />
+      <div className="absolute -top-32 -right-24 z-[1] w-96 h-96 rounded-full bg-[var(--brand-secondary)]/15 blur-3xl animate-blob pointer-events-none" />
+      <div className="absolute -bottom-32 -left-24 z-[1] w-80 h-80 rounded-full bg-[var(--brand-accent)]/12 blur-3xl animate-blob pointer-events-none" style={{ animationDelay: '3s' }} />
+
+      <div className="max-w-4xl mx-auto relative z-10 text-center w-full">
+        <ScrollReveal>
+          <div
+            className={isImmersive ? 'rounded-3xl px-6 py-8 sm:px-10 sm:py-10 backdrop-blur-md bg-white/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-white/10 shadow-2xl' : ''}
+          >
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-tight" style={{ color: 'var(--foreground)' }}>
+              {title}
+            </h1>
+            <p className="mt-4 text-lg max-w-2xl mx-auto leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
+              {description}
+            </p>
+          </div>
+        </ScrollReveal>
+      </div>
+    </section>
+  );
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -11,9 +12,10 @@ import AnalysisLoader from '@/components/Dashboard/AnalysisLoader';
 import { ReportData } from '@/types/report';
 import { analyzeImage } from '@/services/api';
 import PageHeader from '@/components/ui/PageHeader';
-import Badge from '@/components/ui/Badge';
 
 export default function UploadPage() {
+  const searchParams = useSearchParams();
+  const hasPatientContext = Boolean(searchParams.get('patientId'));
   const [isLoading, setIsLoading] = useState(false);
   const [report, setReport] = useState<ReportData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +72,6 @@ export default function UploadPage() {
         eyebrow="AI Screening"
         title="Retinal Analysis"
         description="Upload a fundus image for AI-powered diabetic retinopathy diagnosis"
-        actions={<Badge tone="success" dot>AI Ready</Badge>}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -82,6 +83,7 @@ export default function UploadPage() {
               error={error}
               uploadedFile={uploadedFile}
               onReset={handleReset}
+              disabled={!hasPatientContext}
             />
           </div>
         </div>

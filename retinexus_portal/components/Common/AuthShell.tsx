@@ -3,7 +3,7 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Activity, Brain, Eye, ScanEye, ShieldCheck, Sparkles } from 'lucide-react';
+import { Activity, Brain, Eye, ScanEye, ShieldCheck } from 'lucide-react';
 import Logo from '@/components/ui/Logo';
 
 const highlights = [
@@ -41,9 +41,6 @@ export default function AuthShell({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-cyan-300 border border-white/10 mb-6">
-              <Sparkles className="w-3 h-3" /> AI-Assisted Diabetic Retinopathy Screening
-            </span>
             <h2 className="text-4xl font-bold text-white leading-tight tracking-tight">
               Clinical-grade retinal<br />intelligence, in seconds.
             </h2>

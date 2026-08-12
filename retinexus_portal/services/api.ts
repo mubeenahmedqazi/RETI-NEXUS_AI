@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { ReportData } from '@/types/report';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -54,8 +54,7 @@ export const checkBackendHealth = async (): Promise<boolean> => {
 
 // ✅ Save report - doctorId is automatically added by the API
 export const saveReport = async (reportData: {
-  patientId?: string;
-  patientCnic: string;
+  patientId: string;
   patientName: string;
   drGrade: string;
   confidence: number;
@@ -64,7 +63,6 @@ export const saveReport = async (reportData: {
   processedAt: string;
   reportData: any;
   clinicalReport?: string;
-  phone?: string;
 }) => {
   try {
     console.log('📤 Saving report:', reportData);

@@ -39,7 +39,6 @@ export default function PatientSettingsPage() {
 
   const fields = [
     { icon: User, label: 'Full Name', value: patient?.name },
-    { icon: User, label: 'CNIC', value: patient?.cnic },
     { icon: Phone, label: 'Phone', value: patient?.phone },
     { icon: Calendar, label: 'Age', value: patient?.age },
   ];

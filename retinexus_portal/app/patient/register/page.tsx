@@ -9,11 +9,12 @@ import AuthShell from '@/components/Common/AuthShell';
 import { FormField, SelectField } from '@/components/ui/FormField';
 import Button from '@/components/Common/Button';
 import Loader from '@/components/ui/Loader';
+import { isValidPhone } from '@/lib/utils';
 
 export default function PatientRegisterPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    cnic: '', name: '', phone: '', password: '', confirmPassword: '', age: '', gender: '', address: '',
+    name: '', phone: '', password: '', confirmPassword: '', age: '', gender: '', address: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -36,13 +37,17 @@ export default function PatientRegisterPage() {
       setLoading(false);
       return;
     }
+    if (!isValidPhone(formData.phone)) {
+      setError('Phone number must be exactly 11 digits');
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch('/api/auth/patient-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          cnic: formData.cnic,
           name: formData.name,
           phone: formData.phone,
           password: formData.password,
@@ -77,7 +82,7 @@ export default function PatientRegisterPage() {
           </div>
           <h2 className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>Registration Successful!</h2>
           <p className="mt-2 mb-4" style={{ color: 'var(--muted-foreground)' }}>
-            Your patient account has been created successfully.<br />You can now login with your CNIC and password.
+            Your patient account has been created successfully.<br />You can now login with your phone number and password.
           </p>
           <Loader size="md" />
         </motion.div>
@@ -94,9 +99,18 @@ export default function PatientRegisterPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <FormField label="CNIC" required icon={User} value={formData.cnic} onChange={(e) => setFormData({ ...formData, cnic: e.target.value })} placeholder="35201-7329319-9" />
         <FormField label="Full Name" required icon={User} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="John Doe" />
-        <FormField label="Phone Number" required type="tel" icon={Phone} value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="0300-1234567" />
+        <FormField
+          label="Phone Number"
+          required
+          type="tel"
+          inputMode="numeric"
+          maxLength={11}
+          icon={Phone}
+          value={formData.phone}
+          onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+          placeholder="11-digit phone number"
+        />
 
         <div className="grid grid-cols-2 gap-4">
           <FormField label="Age" type="number" value={formData.age} onChange={(e) => setFormData({ ...formData, age: e.target.value })} placeholder="30" />

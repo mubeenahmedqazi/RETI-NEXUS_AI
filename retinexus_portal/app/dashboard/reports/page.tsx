@@ -27,7 +27,6 @@ interface SavedReport {
   createdAt: string;
   reportData: ReportData;
   patient?: {
-    cnic?: string;
     name?: string;
     age?: number;
     gender?: string;
@@ -189,7 +188,6 @@ export default function ReportsPage() {
                   report={selectedReport.reportData}
                   onReset={closeReportModal}
                   hideActions={true}
-                  patientCnic={selectedReport.patient?.cnic || selectedReport.patientId}
                   patientName={selectedReport.patient?.name || selectedReport.patientName}
                   patientId={selectedReport.patientId}
                   patientAge={selectedReport.patient?.age}

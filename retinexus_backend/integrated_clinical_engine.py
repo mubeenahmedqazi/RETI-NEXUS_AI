@@ -427,8 +427,12 @@ class RetiNexusFullPipeline:
             print("[+] Routing numeric metrics to Gemini AI for final diagnostic reporting...")
             llm_text_report = self.report_generator.generate_clinical_report(pipeline_report)
             pipeline_report["final_clinical_report_md"] = llm_text_report
+
+            print("[+] Generating per-organ patient-friendly interpretation...")
+            pipeline_report["organ_interpretation"] = self.report_generator.generate_patient_interpretation(pipeline_report)
         else:
             pipeline_report["final_clinical_report_md"] = "LLM Engine Offline. Check environment keys."
+            pipeline_report["organ_interpretation"] = {"summary": "", "heart": "", "kidney": "", "brain": ""}
 
         return pipeline_report
 

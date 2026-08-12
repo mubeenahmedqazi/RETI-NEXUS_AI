@@ -14,9 +14,9 @@ export default function Footer() {
             © {currentYear} Retinexus AI. All Rights Reserved.
           </motion.p>
           <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--subtle-foreground)' }}>
-            <Link href="#privacy" className="hover:text-[var(--brand-secondary)] transition-colors duration-300">Privacy</Link>
-            <Link href="#terms" className="hover:text-[var(--brand-secondary)] transition-colors duration-300">Terms</Link>
-            <Link href="#cookies" className="hover:text-[var(--brand-secondary)] transition-colors duration-300">Cookies</Link>
+            <Link href="/privacy" className="hover:text-[var(--brand-secondary)] hover:underline underline-offset-4 transition-colors duration-300">Privacy</Link>
+            <Link href="/terms" className="hover:text-[var(--brand-secondary)] hover:underline underline-offset-4 transition-colors duration-300">Terms</Link>
+            <Link href="/cookies" className="hover:text-[var(--brand-secondary)] hover:underline underline-offset-4 transition-colors duration-300">Cookies</Link>
           </div>
         </div>
       </div>

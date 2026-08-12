@@ -6,6 +6,7 @@ import { X, Users, Key } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Button from '@/components/Common/Button';
 import { FormField, SelectField } from '@/components/ui/FormField';
+import { isValidPhone } from '@/lib/utils';
 
 interface AddPatientModalProps {
   isOpen: boolean;
@@ -15,24 +16,32 @@ interface AddPatientModalProps {
 
 export default function AddPatientModal({ isOpen, onClose, onAdd }: AddPatientModalProps) {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({ cnic: '', name: '', phone: '', age: '', gender: '', address: '' });
+  const [formData, setFormData] = useState({ name: '', phone: '', age: '', gender: '', address: '' });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 11) });
   };
 
   const getDefaultPassword = (name: string) => name.toLowerCase().replace(/\s/g, '');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.cnic || !formData.name || !formData.phone) {
+    if (!formData.name || !formData.phone) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+    if (!isValidPhone(formData.phone)) {
+      toast.error('Phone number must be exactly 11 digits');
       return;
     }
     try {
       setLoading(true);
       await onAdd(formData);
-      setFormData({ cnic: '', name: '', phone: '', age: '', gender: '', address: '' });
+      setFormData({ name: '', phone: '', age: '', gender: '', address: '' });
     } catch (error) {
       console.error('Error adding patient:', error);
     } finally {
@@ -83,9 +92,18 @@ export default function AddPatientModal({ isOpen, onClose, onAdd }: AddPatientMo
                 </div>
               )}
 
-              <FormField label="CNIC Number" required name="cnic" value={formData.cnic} onChange={handleChange} placeholder="e.g., 12345-1234567-1" />
               <FormField label="Full Name" required name="name" value={formData.name} onChange={handleChange} placeholder="Enter patient's full name" />
-              <FormField label="Phone Number" required name="phone" value={formData.phone} onChange={handleChange} placeholder="Enter phone number" />
+              <FormField
+                label="Phone Number"
+                required
+                name="phone"
+                type="tel"
+                inputMode="numeric"
+                maxLength={11}
+                value={formData.phone}
+                onChange={handlePhoneChange}
+                placeholder="11-digit phone number"
+              />
 
               <div className="grid grid-cols-2 gap-4">
                 <FormField label="Age" type="number" name="age" value={formData.age} onChange={handleChange} placeholder="Age" />

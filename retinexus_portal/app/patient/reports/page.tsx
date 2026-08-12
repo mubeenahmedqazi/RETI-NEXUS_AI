@@ -92,7 +92,7 @@ export default function PatientReportsPage() {
       <PageHeader title="My Reports" description={`View all your retinal scan reports — ${reports.length} total`} />
 
       {reports.length === 0 ? (
-        <EmptyState icon={FileText} title="No reports yet" description="Share your CNIC with a doctor to get scanned." />
+        <EmptyState icon={FileText} title="No reports yet" description="Share your phone number with a doctor to get scanned." />
       ) : (
         <div className="space-y-4">
           {reports.map((report, index) => {
@@ -142,7 +142,6 @@ export default function PatientReportsPage() {
                           report={report.reportData}
                           onReset={() => toggleReport(report.id)}
                           hideActions={true}
-                          patientCnic={report.patientCnic}
                           patientName={report.patientName}
                           patientId={report.patientId}
                           patientAge={patientAge}

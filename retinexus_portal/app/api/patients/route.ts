@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { hash } from 'bcryptjs'
 import { prisma } from '@/lib/db'
+import { isValidPhone } from '@/lib/utils'
 
 // GET all patients for the authenticated doctor
 export async function GET() {
@@ -47,23 +48,18 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { cnic, name, phone, age, gender, address, diabetesLevel } = body
+    const { name, phone, age, gender, address, diabetesLevel } = body
 
-    if (!cnic || !name || !phone) {
+    if (!name || !phone) {
       return NextResponse.json(
-        { error: 'CNIC, Name, and Phone are required' },
+        { error: 'Name and Phone are required' },
         { status: 400 }
       )
     }
 
-    // Check if patient already exists
-    const existing = await prisma.patient.findUnique({
-      where: { cnic }
-    })
-
-    if (existing) {
+    if (!isValidPhone(phone)) {
       return NextResponse.json(
-        { error: 'Patient with this CNIC already exists' },
+        { error: 'Phone number must be exactly 11 digits' },
         { status: 400 }
       )
     }
@@ -74,7 +70,6 @@ export async function POST(req: NextRequest) {
 
     const patient = await prisma.patient.create({
       data: {
-        cnic,
         name,
         phone,
         password: hashedPassword,

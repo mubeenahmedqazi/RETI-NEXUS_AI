@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Retinexus AI — A Multi-Organ Diabetic Risk Screening System',
+  title: 'RetiNexus AI | Home',
   description:
     'Retinexus AI reads retinal microvasculature to screen for diabetic retinopathy and early cardiac & renal risk — non-invasively, from a single fundus photograph.',
 };

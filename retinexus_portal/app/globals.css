@@ -369,5 +369,34 @@ body {
     page-break-inside: avoid;
   }
 
+  /* Compact spacing so the full report — every section intact — fits within ~3 A4
+     pages instead of sprawling across many, mostly-empty ones. Nothing is hidden
+     here; only the padding/gaps/thumbnail sizes shrink. */
+  #pdf-report-content.space-y-6 > * + *,
+  #pdf-report-content > * + * {
+    margin-top: 8px !important;
+  }
+  #pdf-report-content .p-6 { padding: 12px !important; }
+  #pdf-report-content .p-5 { padding: 10px !important; }
+  #pdf-report-content .p-4 { padding: 8px !important; }
+  #pdf-report-content .mb-4 { margin-bottom: 6px !important; }
+  #pdf-report-content .mb-3 { margin-bottom: 6px !important; }
+  #pdf-report-content .mb-1 { margin-bottom: 4px !important; }
+  #pdf-report-content .mt-5 { margin-top: 8px !important; }
+  #pdf-report-content .gap-4 { gap: 8px !important; }
+  #pdf-report-content .gap-6 { gap: 8px !important; }
+  #pdf-report-content h3 { font-size: 12.5px !important; line-height: 1.3 !important; }
+  /* Only the already-small body/caption text shrinks further — headline numbers like
+     the DR grade name (text-3xl) and stat counts (text-2xl) are left untouched. */
+  #pdf-report-content .text-sm { font-size: 10.5px !important; line-height: 1.35 !important; }
+  #pdf-report-content .text-xs { font-size: 9px !important; line-height: 1.3 !important; }
+  #pdf-report-content td, #pdf-report-content th { line-height: 1.3 !important; }
+  #pdf-report-content .image-output-grid img {
+    height: 68px !important;
+  }
+  #pdf-report-content .image-output-grid .px-3.py-2 {
+    padding: 3px 8px !important;
+  }
+
   button, .no-print { display: none !important; }
 }

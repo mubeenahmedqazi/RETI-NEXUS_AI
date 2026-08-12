@@ -79,7 +79,6 @@ export default function PatientProfilePage() {
 
   const details = [
     { label: 'Full Name', value: patientData?.name },
-    { label: 'CNIC', value: patientData?.cnic },
     { label: 'Phone Number', value: patientData?.phone },
     { label: 'Age', value: patientData?.age },
     { label: 'Gender', value: patientData?.gender },
@@ -103,7 +102,6 @@ export default function PatientProfilePage() {
               <Badge tone={isSelfRegistered ? 'warning' : 'success'}>{isSelfRegistered ? 'Self Registered' : 'Registered'}</Badge>
             </div>
             <div className="mt-2 flex flex-wrap gap-4 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-              <span className="flex items-center gap-1"><User className="w-4 h-4" /> CNIC: {patientData?.cnic}</span>
               <span className="flex items-center gap-1"><Phone className="w-4 h-4" /> {patientData?.phone}</span>
               {patientData?.gender && <span className="flex items-center gap-1"><Activity className="w-4 h-4" /> {patientData?.gender}</span>}
             </div>

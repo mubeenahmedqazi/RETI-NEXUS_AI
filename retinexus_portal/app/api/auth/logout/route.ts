@@ -10,7 +10,6 @@ export async function POST() {
     cookieStore.delete('user_role');
     cookieStore.delete('user_name');
     cookieStore.delete('doctor_name');
-    cookieStore.delete('patient_cnic');
 
     return NextResponse.json({ 
       success: true, 

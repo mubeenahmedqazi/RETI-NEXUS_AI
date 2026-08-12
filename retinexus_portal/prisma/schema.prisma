@@ -28,7 +28,6 @@ model User {
 
 model Patient {
   id            String   @id @default(cuid())
-  cnic          String   @unique
   name          String
   phone         String
   age           Int?
@@ -49,7 +48,6 @@ model Patient {
 model Report {
   id            String   @id @default(cuid())
   patientId     String
-  patientCnic   String
   patientName   String
   doctorId      String
   drGrade       String

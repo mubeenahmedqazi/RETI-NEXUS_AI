@@ -12,7 +12,6 @@ import Badge, { gradeToTone } from '@/components/ui/Badge';
 interface PatientCardProps {
   patient: {
     id: string;
-    cnic: string;
     name: string;
     phone: string;
     age: number;
@@ -31,16 +30,16 @@ export default function PatientCard({ patient, index }: PatientCardProps) {
 
   const handleViewDetails = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (patient.cnic) router.push(`/dashboard/patient/${encodeURIComponent(patient.cnic)}`);
+    router.push(`/dashboard/patient/${encodeURIComponent(patient.id)}`);
   };
 
   const handleNewScan = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (patient.cnic) router.push(`/dashboard/upload?cnic=${encodeURIComponent(patient.cnic)}`);
+    router.push(`/dashboard/upload?patientId=${encodeURIComponent(patient.id)}&patientName=${encodeURIComponent(patient.name)}`);
   };
 
   const handleCardClick = () => {
-    if (patient.cnic) router.push(`/dashboard/patient/${encodeURIComponent(patient.cnic)}`);
+    router.push(`/dashboard/patient/${encodeURIComponent(patient.id)}`);
   };
 
   return (
@@ -61,7 +60,6 @@ export default function PatientCard({ patient, index }: PatientCardProps) {
             <h4 className="text-lg font-semibold group-hover:text-[var(--brand-secondary)] transition-colors duration-300" style={{ color: 'var(--foreground)' }}>
               {patient.name}
             </h4>
-            <p className="text-sm" style={{ color: 'var(--subtle-foreground)' }}>CNIC: {patient.cnic}</p>
           </div>
         </div>
         <ChevronRight className="w-5 h-5 group-hover:translate-x-1 group-hover:text-[var(--brand-secondary)] transition-all duration-300" style={{ color: 'var(--subtle-foreground)' }} />

@@ -5,9 +5,9 @@ import { cn } from '@/lib/utils';
 import Logo from './Logo';
 
 const SIZE_MAP = {
-  sm: { ring: 22, mask: 3, icon: 16 },
-  md: { ring: 44, mask: 5, icon: 28 },
-  lg: { ring: 72, mask: 7, icon: 44 },
+  sm: { ring: 44, mask: 5, icon: 33 },
+  md: { ring: 88, mask: 8, icon: 65 },
+  lg: { ring: 160, mask: 14, icon: 118 },
 };
 
 interface LoaderProps {
@@ -38,7 +38,7 @@ export default function Loader({ size = 'md', label, className }: LoaderProps) {
           animate={{ scale: [0.85, 1, 0.85], opacity: [0.6, 1, 0.6] }}
           transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <Logo size={icon} />
+          <Logo size={icon} frame={false} />
         </motion.div>
       </div>
       {label && (

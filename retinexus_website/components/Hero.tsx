@@ -1,12 +1,13 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles, Eye, CheckCircle2, Microscope, Stethoscope, UserCircle } from 'lucide-react';
+import { Eye, CheckCircle2, Microscope, Stethoscope, UserCircle } from 'lucide-react';
 import AnimatedCounter from '@/components/ui/AnimatedCounter';
 import ParallaxField from './ParallaxField';
 import ScrollReveal from './ScrollReveal';
-import { PORTAL_LOGIN_URL, PORTAL_SIGNUP_URL } from '@/lib/portal';
+import { PORTAL_LOGIN_URL } from '@/lib/portal';
 
 const stats = [
   { value: 98.4, suffix: '%', label: 'Model sensitivity', decimals: 1 },
@@ -16,19 +17,55 @@ const stats = [
 ];
 
 export default function Hero() {
-  return (
-    <section className="relative pt-20 pb-24 px-6 overflow-hidden min-h-[92vh] flex items-center">
-      <ParallaxField />
-      <div className="absolute inset-0 bg-dot-grid opacity-70 pointer-events-none" />
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-      <div className="max-w-6xl mx-auto relative w-full">
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    video.muted = true;
+    video.defaultMuted = true;
+
+    const start = () => {
+      video.playbackRate = 0.5;
+      if (!mq.matches) video.play().catch(() => {});
+    };
+
+    if (video.readyState >= 2) start();
+    else video.addEventListener('loadeddata', start, { once: true });
+
+    return () => video.removeEventListener('loadeddata', start);
+  }, []);
+
+  return (
+    <section className="relative z-0 isolate pt-44 sm:pt-48 pb-24 px-6 overflow-hidden min-h-[92vh] flex items-center">
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <video
+          ref={videoRef}
+          className="absolute inset-0 w-full h-full object-cover opacity-55 dark:opacity-45"
+          src="/medical-neural-loop.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          tabIndex={-1}
+          aria-hidden="true"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--background)] via-[var(--background)]/40 to-[var(--background)]" />
+      </div>
+
+      <div className="absolute inset-0 z-[1]">
+        <ParallaxField />
+        <div className="absolute inset-0 bg-dot-grid opacity-40 pointer-events-none" />
+      </div>
+
+      <div className="max-w-6xl mx-auto relative z-10 w-full">
         <div className="grid lg:grid-cols-2 gap-14 items-center">
           <div>
             <ScrollReveal>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--brand-secondary)]/10 text-[var(--brand-secondary)] border border-[var(--brand-secondary)]/20">
-                <Sparkles className="w-3 h-3" /> A Multi-Organ Diabetic Risk Screening System
-              </span>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mt-5 leading-[1.08]" style={{ color: 'var(--foreground)' }}>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.08]" style={{ color: 'var(--foreground)' }}>
                 One retinal photo.
                 <span className="block text-gradient-brand">A window into whole-body risk.</span>
               </h1>
@@ -37,23 +74,7 @@ export default function Hero() {
                 and early signals of cardiac &amp; renal risk — instantly, non-invasively, from a single fundus photograph.
               </p>
 
-              <div className="mt-8 flex flex-wrap items-center gap-4">
-                <Link
-                  href={PORTAL_LOGIN_URL}
-                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl font-medium text-white bg-gradient-to-r from-[var(--brand-secondary)] to-[var(--brand-accent)] shadow-xl shadow-cyan-500/25 hover:scale-105 transition-transform"
-                >
-                  Launch Clinical Portal <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href={PORTAL_SIGNUP_URL}
-                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl font-medium backdrop-blur-md bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 hover:bg-white transition-colors"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  Create Free Account
-                </Link>
-              </div>
-
-              <div className="mt-5 flex flex-wrap items-center gap-4 text-xs" style={{ color: 'var(--subtle-foreground)' }}>
+              <div className="mt-6 flex flex-wrap items-center gap-4 text-xs" style={{ color: 'var(--subtle-foreground)' }}>
                 <Link href={PORTAL_LOGIN_URL} className="inline-flex items-center gap-1.5 hover:text-[var(--brand-secondary)] transition-colors">
                   <Stethoscope className="w-3.5 h-3.5" /> Doctor Login
                 </Link>

@@ -36,11 +36,11 @@ export async function GET(request: NextRequest) {
 
     let reports = []
 
-    // ✅ If PATIENT is logged in - get reports by their CNIC
+    // ✅ If PATIENT is logged in - get reports by their patientId
     if (decodedRole === 'PATIENT') {
       const patient = await prisma.patient.findUnique({
         where: { id: userId },
-        select: { cnic: true, name: true }
+        select: { id: true, name: true }
       })
 
       if (!patient) {
@@ -50,20 +50,17 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      console.log('🔍 Looking for reports for patient CNIC:', patient.cnic)
-
       reports = await prisma.report.findMany({
-        where: { 
-          patientCnic: patient.cnic
+        where: {
+          patientId: patient.id
         },
-        orderBy: { 
-          createdAt: 'desc' 
+        orderBy: {
+          createdAt: 'desc'
         },
         include: {
           patient: {
             select: {
               name: true,
-              cnic: true,
               phone: true,
             }
           }
@@ -156,97 +153,41 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     console.log('📤 Saving report:', body)
 
-    const { 
-      patientId, 
-      patientCnic, 
-      patientName, 
-      drGrade, 
-      confidence, 
-      description, 
-      imageUrl, 
-      processedAt, 
+    const {
+      patientId,
+      patientName,
+      drGrade,
+      confidence,
+      description,
+      imageUrl,
+      processedAt,
       reportData,
       clinicalReport, // ✅ New field for LLM report
-      phone 
     } = body
 
     // Validate required fields
-    if (!patientCnic) {
+    if (!patientId) {
       return NextResponse.json(
-        { error: 'Patient CNIC is required' },
+        { error: 'Patient ID is required' },
         { status: 400 }
       )
     }
 
-    let patient
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId }
+    })
 
-    // STEP 1: Try to find patient by ID (if provided)
-    if (patientId) {
-      patient = await prisma.patient.findFirst({
-        where: { 
-          id: patientId
-        }
-      })
-      if (patient) {
-        console.log('📋 Found patient by ID:', patient)
-      }
-    }
-
-    // STEP 2: If not found by ID, try to find by CNIC (ANY doctor)
     if (!patient) {
-      patient = await prisma.patient.findFirst({
-        where: { 
-          cnic: patientCnic
-        }
-      })
-      if (patient) {
-        console.log('📋 Found patient by CNIC (global):', patient)
-      }
+      return NextResponse.json(
+        { error: 'Patient not found' },
+        { status: 404 }
+      )
     }
 
-    // STEP 3: If patient found, use it (even if belongs to another doctor)
-    if (patient) {
-      console.log('📋 Using existing patient:', patient)
-    } else {
-      // STEP 4: Patient doesn't exist at all - create new one
-      console.log('👤 Patient not found, creating new patient...')
-      try {
-        patient = await prisma.patient.create({
-          data: {
-            cnic: patientCnic,
-            name: patientName || 'Unknown Patient',
-            phone: phone || '0000000000',
-            age: null,
-            gender: null,
-            address: null,
-            diabetesLevel: null,
-            doctorId: docId
-          }
-        })
-        console.log('✅ Created new patient:', patient)
-      } catch (createError: any) {
-        if (createError.code === 'P2002') {
-          // Race condition - patient was created by another request
-          const existingPatient = await prisma.patient.findUnique({
-            where: { cnic: patientCnic }
-          })
-          if (existingPatient) {
-            patient = existingPatient
-            console.log('📋 Found existing patient after conflict:', patient)
-          } else {
-            throw createError
-          }
-        } else {
-          throw createError
-        }
-      }
-    }
-
-    // ✅ STEP 5: Create the report with the patient - USE patient.cnic (actual CNIC)
+    // ✅ Create the report with the patient
     const report = await prisma.report.create({
       data: {
         patientId: patient.id,
-        patientCnic: patient.cnic,  // ✅ Use actual CNIC
         patientName: patient.name,
         doctorId: docId,
         drGrade: drGrade || 'Unknown',
@@ -262,8 +203,7 @@ export async function POST(req: NextRequest) {
     })
 
     console.log('✅ Report saved:', report.id)
-    console.log('✅ Patient CNIC in report:', report.patientCnic)
-    
+
     return NextResponse.json({ 
       success: true, 
       report,

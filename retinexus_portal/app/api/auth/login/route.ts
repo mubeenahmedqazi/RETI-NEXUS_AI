@@ -5,7 +5,7 @@ import prisma from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, role } = await request.json();
+    const { email, password, role, patientId } = await request.json();
 
     // Validate input
     if (!email || !password) {
@@ -91,7 +91,6 @@ export async function POST(request: NextRequest) {
       cookieStore.delete('user_role');
       cookieStore.delete('user_name');
       cookieStore.delete('doctor_name'); // <-- Also delete doctor_name
-      cookieStore.delete('patient_cnic');
 
       // Set new cookies - SET BOTH user_id AND doctor_id
       cookieStore.set('auth_token', token, {
@@ -161,17 +160,16 @@ export async function POST(request: NextRequest) {
 
     // === PATIENT LOGIN ===
     if (role === 'patient') {
-      // Try to find patient by CNIC or Phone number
-      const patient = await prisma.patient.findFirst({
-        where: {
-          OR: [
-            { cnic: email },
-            { phone: email }
-          ]
-        },
+      // Phone numbers are not unique (multiple patients — e.g. family members —
+      // can share one phone), so a phone alone doesn't identify one account.
+      // The login page has the visitor pick a specific profile first (via
+      // /api/auth/patient-lookup) and sends that id here for a precise,
+      // unambiguous check. If no patientId is sent (older clients), fall back
+      // to matching password across every patient on that number.
+      const candidates = await prisma.patient.findMany({
+        where: patientId ? { id: patientId, phone: email } : { phone: email },
         select: {
           id: true,
-          cnic: true,
           name: true,
           phone: true,
           password: true,
@@ -186,23 +184,23 @@ export async function POST(request: NextRequest) {
         }
       });
 
+      if (candidates.length === 0) {
+        return NextResponse.json(
+          { error: 'Patient not found. Please check your phone number.' },
+          { status: 401 }
+        );
+      }
+
+      let patient: (typeof candidates)[number] | null = null;
+      for (const candidate of candidates) {
+        if (!candidate.password) continue;
+        if (await compare(password, candidate.password)) {
+          patient = candidate;
+          break;
+        }
+      }
+
       if (!patient) {
-        return NextResponse.json(
-          { error: 'Patient not found. Please check your CNIC or Phone number.' },
-          { status: 401 }
-        );
-      }
-
-      // Check if patient has a password set
-      if (!patient.password) {
-        return NextResponse.json(
-          { error: 'Account not fully set up. Please contact your doctor to set up your login.' },
-          { status: 401 }
-        );
-      }
-
-      const isPasswordValid = await compare(password, patient.password);
-      if (!isPasswordValid) {
         return NextResponse.json(
           { error: 'Invalid credentials' },
           { status: 401 }
@@ -212,7 +210,6 @@ export async function POST(request: NextRequest) {
       // Create session token for patient
       const tokenData = {
         userId: patient.id,
-        cnic: patient.cnic,
         name: patient.name,
         role: 'PATIENT',
         doctorId: patient.doctorId,
@@ -230,7 +227,6 @@ export async function POST(request: NextRequest) {
       cookieStore.delete('user_id');
       cookieStore.delete('user_role');
       cookieStore.delete('user_name');
-      cookieStore.delete('patient_cnic');
 
       // Set new cookies
       cookieStore.set('auth_token', token, {
@@ -240,7 +236,7 @@ export async function POST(request: NextRequest) {
         maxAge: 60 * 60 * 24,
         path: '/',
       });
-      
+
       cookieStore.set('user_id', patient.id, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -265,19 +261,10 @@ export async function POST(request: NextRequest) {
         path: '/',
       });
 
-      cookieStore.set('patient_cnic', patient.cnic, {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24,
-        path: '/',
-      });
-
       return NextResponse.json({
         success: true,
         userId: patient.id,
         name: patient.name,
-        cnic: patient.cnic,
         phone: patient.phone,
         role: 'PATIENT',
         doctorId: patient.doctorId,

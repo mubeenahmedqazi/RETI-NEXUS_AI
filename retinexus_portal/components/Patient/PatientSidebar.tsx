@@ -4,9 +4,10 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Settings, LogOut, User, Eye } from 'lucide-react';
+import { LayoutDashboard, Settings, LogOut, User, Eye, Users } from 'lucide-react';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import Logo from '@/components/ui/Logo';
+import SwitchProfileModal from './SwitchProfileModal';
 
 interface PatientSidebarProps {
   isOpen: boolean;
@@ -26,6 +27,9 @@ export default function PatientSidebar({ isOpen, setIsOpen }: PatientSidebarProp
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [patientName, setPatientName] = useState('Patient');
   const [patientInitial, setPatientInitial] = useState('P');
+  const [patientId, setPatientId] = useState('');
+  const [patientPhone, setPatientPhone] = useState('');
+  const [isSwitchOpen, setIsSwitchOpen] = useState(false);
 
   useEffect(() => {
     const fetchPatientInfo = async () => {
@@ -36,6 +40,8 @@ export default function PatientSidebar({ isOpen, setIsOpen }: PatientSidebarProp
           const name = data.name || 'Patient';
           setPatientName(name);
           setPatientInitial(name.charAt(0).toUpperCase());
+          setPatientId(data.id || '');
+          setPatientPhone(data.phone || '');
         }
       } catch (error) {
         console.error('Failed to fetch patient info:', error);
@@ -162,6 +168,7 @@ export default function PatientSidebar({ isOpen, setIsOpen }: PatientSidebarProp
             </div>
 
             <button
+              type="button"
               className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-xl hover:bg-[var(--muted)] transition-all duration-300 text-sm group"
               style={{ color: 'var(--muted-foreground)' }}
               onClick={() => router.push('/patient/profile')}
@@ -171,6 +178,17 @@ export default function PatientSidebar({ isOpen, setIsOpen }: PatientSidebarProp
             </button>
 
             <button
+              type="button"
+              className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-xl hover:bg-[var(--muted)] transition-all duration-300 text-sm group"
+              style={{ color: 'var(--muted-foreground)' }}
+              onClick={() => setIsSwitchOpen(true)}
+            >
+              <Users className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+              <span>Switch Profile</span>
+            </button>
+
+            <button
+              type="button"
               className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-xl hover:bg-red-500/10 transition-all duration-300 text-sm text-[var(--muted-foreground)] hover:text-red-500 group"
               onClick={handleLogout}
               disabled={isLoggingOut}
@@ -185,6 +203,7 @@ export default function PatientSidebar({ isOpen, setIsOpen }: PatientSidebarProp
               {patientInitial}
             </div>
             <button
+              type="button"
               className="flex justify-center p-2 rounded-xl hover:bg-[var(--muted)] transition-all duration-300 w-full"
               style={{ color: 'var(--muted-foreground)' }}
               onClick={() => router.push('/patient/profile')}
@@ -192,6 +211,15 @@ export default function PatientSidebar({ isOpen, setIsOpen }: PatientSidebarProp
               <User className="w-4 h-4" />
             </button>
             <button
+              type="button"
+              className="flex justify-center p-2 rounded-xl hover:bg-[var(--muted)] transition-all duration-300 w-full"
+              style={{ color: 'var(--muted-foreground)' }}
+              onClick={() => setIsSwitchOpen(true)}
+            >
+              <Users className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
               className="flex justify-center p-2 rounded-xl hover:bg-red-500/10 transition-all duration-300 text-[var(--muted-foreground)] hover:text-red-500 w-full"
               onClick={handleLogout}
               disabled={isLoggingOut}
@@ -201,6 +229,13 @@ export default function PatientSidebar({ isOpen, setIsOpen }: PatientSidebarProp
           </div>
         )}
       </div>
+
+      <SwitchProfileModal
+        isOpen={isSwitchOpen}
+        onClose={() => setIsSwitchOpen(false)}
+        phone={patientPhone}
+        currentPatientId={patientId}
+      />
     </motion.aside>
   );
 }

@@ -18,8 +18,8 @@ export const metadata: Metadata = {
   },
   description: 'Clinical-grade AI retinal screening: lesion detection, vessel segmentation, disease grading and explainable reports.',
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
+    icon: '/logo.png',
+    shortcut: '/logo.png',
     apple: '/favicon.ico',
   },
 };

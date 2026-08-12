@@ -9,6 +9,8 @@ interface LogoProps {
   animated?: boolean;
   withWordmark?: boolean;
   withTagline?: boolean;
+  /** Rounded-rect cyan boundary around the eye. Off for contexts (like the loader) that already have their own framing. */
+  frame?: boolean;
   className?: string;
   wordmarkClassName?: string;
   /** Override for fixed-dark surfaces (e.g. the auth brand panel) that don't follow the light/dark theme. */
@@ -39,6 +41,7 @@ export default function Logo({
   animated = true,
   withWordmark = false,
   withTagline = false,
+  frame = true,
   className,
   wordmarkClassName,
   wordmarkColor,
@@ -58,13 +61,15 @@ export default function Logo({
   return (
     <div
       className={cn('inline-flex items-center relative', className)}
-      style={{ padding: `${padY}px ${padX}px` }}
+      style={{ padding: frame ? `${padY}px ${padX}px` : 0 }}
     >
       {/* .frame::before — rounded-rect cyan boundary wrapping the whole lockup */}
-      <div
-        className="absolute pointer-events-none"
-        style={{ inset, borderRadius: radius, border: `${borderW}px solid #22C6D9`, opacity: 0.95 }}
-      />
+      {frame && (
+        <div
+          className="absolute pointer-events-none"
+          style={{ inset, borderRadius: radius, border: `${borderW}px solid #22C6D9`, opacity: 0.95 }}
+        />
+      )}
 
       <div className="flex items-center" style={{ gap }}>
         <div style={{ width: size, height: size }} className="flex-shrink-0">
@@ -88,10 +93,10 @@ export default function Logo({
             <g clipPath={`url(#${id('eyeClip')})`}>
               <image
                 href="/logo.png"
-                x="57"
-                y="198"
-                width="886"
-                height="605"
+                x="0"
+                y="159"
+                width="1000"
+                height="683"
                 preserveAspectRatio="xMidYMid slice"
               />
 

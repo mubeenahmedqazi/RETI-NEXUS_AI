@@ -1,17 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hash } from 'bcryptjs';
 import prisma from '@/lib/db';
+import { isValidPhone } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
-    const { cnic, name, phone, password, age, gender, address } = await request.json();
+    const { name, phone, password, age, gender, address } = await request.json();
 
-    console.log('📝 Patient registration attempt:', { cnic, name, phone });
+    console.log('📝 Patient registration attempt:', { name, phone });
 
     // Validate input
-    if (!cnic || !name || !phone || !password) {
+    if (!name || !phone || !password) {
       return NextResponse.json(
-        { error: 'CNIC, Name, Phone, and Password are required' },
+        { error: 'Name, Phone, and Password are required' },
+        { status: 400 }
+      );
+    }
+
+    if (!isValidPhone(phone)) {
+      return NextResponse.json(
+        { error: 'Phone number must be exactly 11 digits' },
         { status: 400 }
       );
     }
@@ -23,29 +31,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if patient already exists
-    const existingPatient = await prisma.patient.findFirst({
-      where: {
-        OR: [
-          { cnic: cnic },
-          { phone: phone }
-        ]
-      }
-    });
-
-    if (existingPatient) {
-      return NextResponse.json(
-        { error: 'Patient with this CNIC or Phone already exists' },
-        { status: 409 }
-      );
-    }
-
     // ✅ Self-registered - NO doctor assigned
     const hashedPassword = await hash(password, 10);
 
     const patient = await prisma.patient.create({
       data: {
-        cnic,
         name,
         phone,
         password: hashedPassword,
@@ -64,7 +54,6 @@ export async function POST(request: NextRequest) {
       patient: {
         id: patient.id,
         name: patient.name,
-        cnic: patient.cnic,
         phone: patient.phone,
       },
     });

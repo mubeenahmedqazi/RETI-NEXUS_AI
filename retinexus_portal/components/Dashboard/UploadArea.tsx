@@ -14,17 +14,19 @@ interface UploadAreaProps {
   error: string | null;
   uploadedFile: File | null;
   onReset: () => void;
+  /** True when this page was opened directly, without a patient selected via "New Scan". */
+  disabled?: boolean;
 }
 
 export default function UploadArea({
-  onUpload, isLoading, error, uploadedFile, onReset
+  onUpload, isLoading, error, uploadedFile, onReset, disabled = false
 }: UploadAreaProps) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (files) => files.length > 0 && onUpload(files[0]),
     accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.tiff', '.tif', '.bmp'] },
     maxSize: 50 * 1024 * 1024,
     multiple: false,
-    disabled: isLoading
+    disabled: isLoading || disabled
   });
 
   return (
@@ -42,7 +44,7 @@ export default function UploadArea({
       {!uploadedFile ? (
         <div
           {...getRootProps()}
-          className="relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300"
+          className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
           style={{
             borderColor: isDragActive ? 'var(--brand-accent)' : 'var(--border)',
             background: isDragActive ? 'color-mix(in srgb, var(--brand-accent) 6%, transparent)' : 'transparent',

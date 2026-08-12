@@ -9,7 +9,6 @@ const SESSION_COOKIES = [
   'user_role',
   'user_name',
   'doctor_name',
-  'patient_cnic',
 ];
 
 // Clears a stale/orphaned session (e.g. token points at a deleted user) so the
@@ -84,7 +83,6 @@ export async function GET(request: NextRequest) {
         where: { id: userId },
         select: {
           id: true,
-          cnic: true,
           name: true,
           phone: true,
           age: true,

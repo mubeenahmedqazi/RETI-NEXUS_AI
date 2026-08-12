@@ -15,7 +15,6 @@ import EmptyState from '@/components/ui/EmptyState';
 interface PatientReportsProps {
   patient: {
     id: string;
-    cnic: string;
     name: string;
     phone: string;
     age: number;
@@ -128,7 +127,6 @@ export default function PatientReports({ patient, onUploadClick }: PatientReport
                             report={report.reportData}
                             onReset={() => toggleReport(report.id)}
                             hideActions={true}
-                            patientCnic={patient.cnic}
                             patientName={patient.name}
                             patientId={patient.id}
                             patientAge={patient.age}

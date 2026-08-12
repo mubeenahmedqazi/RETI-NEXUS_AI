@@ -15,10 +15,10 @@ import AddPatientModal from '@/components/Patient/AddPatientModal';
 import { format } from 'date-fns';
 import { toast } from 'react-toastify';
 import Loader, { SectionLoader } from '@/components/ui/Loader';
+import PageHeader from '@/components/ui/PageHeader';
 
 interface Patient {
   id: string;
-  cnic: string;
   name: string;
   phone: string;
   age: number;
@@ -77,8 +77,9 @@ export default function PatientsPage() {
     }
   };
 
-  const handleSearch = async () => {
-    if (!searchTerm.trim()) {
+  const handleSearch = () => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) {
       setFilteredPatients(patients);
       setShowSearchResults(false);
       setSelectedPatient(null);
@@ -87,73 +88,30 @@ export default function PatientsPage() {
       return;
     }
 
-    setIsSearching(true);
-    setSearchError('');
-    setSearchResultType('none');
+    const matches = patients.filter(
+      (p) => p.name?.toLowerCase().includes(term) || p.phone?.includes(term)
+    );
 
-    try {
-      const cleanCnic = searchTerm.trim();
-      
-      const response = await fetch(`/api/patients/${encodeURIComponent(cleanCnic)}`);
-      const data = await response.json();
-
-      if (data.exists) {
-        if (data.belongsToCurrentDoctor) {
-          setSelectedPatient(data.patient);
-          setEditFormData(data.patient);
-          setSearchResultType('own');
-          setSearchError('');
-          setFilteredPatients([data.patient]);
-          setShowSearchResults(true);
-        } else {
-          setSelectedPatient(data.patient);
-          setSearchResultType('other');
-          
-          const patient = data.patient;
-          const doctorName = patient.doctor?.name;
-          const hospitalName = patient.doctor?.hospital;
-          
-          if (!doctorName || doctorName === 'Unknown' || !patient.doctorId || patient.doctorId === '' || patient.doctorId === null) {
-            setSearchError(`ℹ️ This patient is Self Registered. No doctor assigned yet.`);
-          } else {
-            setSearchError(`ℹ️ This patient is registered with Dr. ${doctorName}${hospitalName ? ` at ${hospitalName}` : ''}`);
-          }
-          
-          setFilteredPatients([data.patient]);
-          setShowSearchResults(true);
-        }
-      } else {
-        setSelectedPatient(null);
-        setSearchResultType('none');
-        setSearchError(`❌ No patient found with CNIC: ${searchTerm}`);
-        setFilteredPatients([]);
-        setShowSearchResults(true);
-      }
-    } catch (error) {
-      console.error('Error searching patient:', error);
-      setSearchError('Error searching for patient. Please try again.');
-    } finally {
-      setIsSearching(false);
+    if (matches.length > 0) {
+      setSearchError('');
+      setSearchResultType('own');
+      setFilteredPatients(matches);
+      setShowSearchResults(true);
+    } else {
+      setSelectedPatient(null);
+      setSearchResultType('none');
+      setSearchError(`❌ No patient found matching: ${searchTerm}`);
+      setFilteredPatients([]);
+      setShowSearchResults(true);
     }
   };
 
   const handleAddPatient = async (patientData: any) => {
     // Prevent double submission
     if (isAddingPatient) return;
-    
+
     setIsAddingPatient(true);
     try {
-      // Check if CNIC exists
-      const checkResponse = await fetch(`/api/patients/${encodeURIComponent(patientData.cnic)}`);
-      const checkData = await checkResponse.json();
-      
-      if (checkData.exists) {
-        const doctorName = checkData.patient?.doctor?.name || 'Unknown';
-        toast.error(` Patient with CNIC ${patientData.cnic} already exists with Dr. ${doctorName}. Please use a different CNIC.`);
-        setIsAddingPatient(false);
-        return;
-      }
-
       const response = await fetch('/api/patients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -209,7 +167,7 @@ export default function PatientsPage() {
 
   const confirmScan = () => {
     if (scanPatient) {
-      router.push(`/dashboard/upload?patientId=${scanPatient.id}&patientCnic=${scanPatient.cnic}&patientName=${scanPatient.name}`);
+      router.push(`/dashboard/upload?patientId=${scanPatient.id}&patientName=${encodeURIComponent(scanPatient.name)}`);
     }
     setShowScanModal(false);
     setScanPatient(null);
@@ -228,7 +186,7 @@ export default function PatientsPage() {
         toast.success('✅ Report approved successfully!');
         await loadPatients();
         if (selectedPatient) {
-          const refreshResponse = await fetch(`/api/patients/${encodeURIComponent(selectedPatient.cnic)}`);
+          const refreshResponse = await fetch(`/api/patients/${encodeURIComponent(selectedPatient.id)}`);
           const refreshData = await refreshResponse.json();
           if (refreshData.exists) {
             setSelectedPatient(refreshData.patient);
@@ -283,26 +241,28 @@ export default function PatientsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>Patients</h1>
-          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+      <PageHeader
+        title="Patients"
+        description={
+          <>
             Manage your patients and their records
             {showSearchResults && selectedPatient && (
               <span className="ml-2 text-[var(--brand-secondary)]">
                 • {filteredPatients.length} results found
               </span>
             )}
-          </p>
-        </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[var(--brand-secondary)] to-[var(--brand-accent)] text-white font-medium hover:shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 hover:scale-105 whitespace-nowrap"
-        >
-          <UserPlus className="w-4 h-4" />
-          Add New Patient
-        </button>
-      </div>
+          </>
+        }
+        actions={
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[var(--brand-secondary)] to-[var(--brand-accent)] text-white font-medium hover:shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 hover:scale-105 whitespace-nowrap"
+          >
+            <UserPlus className="w-4 h-4" />
+            Add New Patient
+          </button>
+        }
+      />
 
       {/* Search Bar */}
       <div className="surface rounded-2xl p-4">
@@ -311,7 +271,7 @@ export default function PatientsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--subtle-foreground)' }} />
             <input
               type="text"
-              placeholder="Search by CNIC to view patient records..."
+              placeholder="Search by name or phone number..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -475,7 +435,7 @@ export default function PatientsPage() {
                 </p>
                 <div className="rounded-xl p-4 mb-4" style={{ background: 'var(--muted)' }}>
                   <p className="font-semibold" style={{ color: 'var(--foreground)' }}>{scanPatient.name}</p>
-                  <p className="text-sm" style={{ color: 'var(--subtle-foreground)' }}>CNIC: {scanPatient.cnic}</p>
+                  <p className="text-sm" style={{ color: 'var(--subtle-foreground)' }}>Phone: {scanPatient.phone}</p>
                   {scanPatient.doctor && scanPatient.doctorId !== scanPatient.doctor?.id && (
                     <p className="text-xs text-amber-500 mt-1">
                       Registered with: Dr. {scanPatient.doctor.name}

@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import PatientSidebar from '@/components/Patient/PatientSidebar';
-import Header from '@/components/Common/Header';
 import Footer from '@/components/Common/Footer';
 import { FullScreenLoader } from '@/components/ui/Loader';
 
@@ -131,9 +130,8 @@ export default function PatientLayout({
           isSidebarOpen && !isMobile ? 'lg:ml-[240px]' : isMobile ? 'ml-0' : 'lg:ml-[70px]'
         }`}
       >
-        <Header />
         <motion.div
-          className="flex-1 p-4 md:p-6 lg:p-8 mt-16"
+          className="flex-1 p-4 md:p-6 lg:p-8"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}

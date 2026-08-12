@@ -106,7 +106,7 @@ export default function PatientDashboard() {
         </h3>
 
         {reports.length === 0 ? (
-          <EmptyState icon={FileText} title="No reports yet" description="Share your CNIC with a doctor to get scanned." />
+          <EmptyState icon={FileText} title="No reports yet" description="Share your phone number with a doctor to get scanned." />
         ) : (
           <div className="grid sm:grid-cols-2 gap-6 items-center">
             <div className="h-56">
