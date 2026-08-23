@@ -1,9 +1,17 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# PyTorch CPU explicit specification
+torch==2.2.2+cpu
+torchvision==0.17.2+cpu
+
+# Core Web & API
 fastapi
 uvicorn[standard]
 python-multipart
 python-dotenv
 requests
 
+# Data & Image Processing
 numpy
 pandas
 scipy
@@ -12,12 +20,10 @@ opencv-python-headless
 Pillow
 huggingface_hub
 
+# Computer Vision Models
 segmentation-models-pytorch
 timm
 ultralytics
 
-# Detailed Analysis: OCR for uploaded follow-up test reports (PDF/JPG/JPEG).
-# pytesseract is a wrapper — it also requires the Tesseract OCR engine itself installed
-# on the machine (not pip-installable): https://github.com/UB-Mannheim/tesseract/wiki
-pytesseract
+# Document Processing
 PyMuPDF
