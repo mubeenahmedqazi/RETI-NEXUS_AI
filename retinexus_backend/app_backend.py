@@ -8,13 +8,50 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from huggingface_hub import hf_hub_download
 
 from src.ocr_extraction import extract_document_text, verify_patient_name_in_text, OCRUnavailableError
 
 # Add the current directory to path to ensure imports work
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Import from integrated_clinical_engine
+# ---------------------------------------------------------------------------
+# 📦 HUGGING FACE AUTOMATIC MODEL WEIGHTS DOWNLOADER
+# ---------------------------------------------------------------------------
+HF_REPO_ID = "mubeenahmedqazi/retinexus-trained-weights"
+HF_TOKEN = os.getenv("HF_TOKEN")
+
+def ensure_model_weight(filename: str, local_dir: str = "trained_weights") -> str:
+    """Checks if a model weight file exists locally; downloads it from HF if missing."""
+    os.makedirs(local_dir, exist_ok=True)
+    local_path = os.path.join(local_dir, filename)
+    
+    if not os.path.exists(local_path):
+        print(f"[*] Missing local weight '{filename}'. Downloading from Hugging Face...")
+        try:
+            hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=filename,
+                local_dir=local_dir,
+                token=HF_TOKEN
+            )
+            print(f"[+] Downloaded '{filename}' successfully.")
+        except Exception as err:
+            print(f"[-] Failed to download '{filename}' from Hugging Face: {err}")
+    return local_path
+
+# Verify or download required weight files on initialization
+REQUIRED_WEIGHTS = [
+    # Add any model filenames stored in your Hugging Face repo here
+    # e.g., "densenet121.pth", "yolov8_lesion.pt", "unet_segmentation.pth"
+]
+
+for weight_file in REQUIRED_WEIGHTS:
+    ensure_model_weight(weight_file)
+
+# ---------------------------------------------------------------------------
+# 🚀 IMPORT CLINICAL ENGINE PIPELINE
+# ---------------------------------------------------------------------------
 try:
     from integrated_clinical_engine import RetiNexusFullPipeline
     print("[+] Successfully imported RetiNexusFullPipeline from integrated_clinical_engine")
@@ -29,7 +66,7 @@ app = FastAPI(
     version="1.0"
 )
 
-# 🌐 CORS CONFIGURATION: Allow Next.js Frontend (Port 3000) to communicate
+# 🌐 CORS CONFIGURATION
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -45,11 +82,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 📁 SERVE STATIC FILES - This makes images accessible
-# Create output_results directory if it doesn't exist
+# 📁 SERVE STATIC FILES
 os.makedirs("./output_results", exist_ok=True)
-
-# Mount the output_results directory to serve static files
 app.mount("/output_results", StaticFiles(directory="./output_results"), name="output_results")
 
 # Deep Learning Pipelines memory check on startup
@@ -63,7 +97,7 @@ try:
         pipeline_engine = RetiNexusFullPipeline()
         print("[+] All Core Framework Weights Verified & Loaded Successfully!")
         print("[+] Pipeline Engine Status: ONLINE")
-        print("[+] LLM (Gemini AI) Status: ONLINE")
+        print("[+] LLM Status: ONLINE")
     else:
         print("[-] RetiNexusFullPipeline class not available")
         
@@ -73,6 +107,7 @@ except Exception as e:
     import traceback
     traceback.print_exc()
     pipeline_engine = None
+
 
 @app.get("/")
 def read_root():
@@ -84,6 +119,7 @@ def read_root():
         "timestamp": datetime.now().isoformat()
     }
 
+
 @app.get("/health")
 def health_check():
     """Simple health check endpoint"""
@@ -94,10 +130,10 @@ def health_check():
         "timestamp": datetime.now().isoformat()
     }
 
+
 @app.get("/images/{filename}")
 async def get_image(filename: str):
     """Serve images from output_results directory"""
-    # Security: Prevent directory traversal
     if ".." in filename or "/" in filename or "\\" in filename:
         return JSONResponse(status_code=400, content={"error": "Invalid filename"})
     
@@ -105,6 +141,7 @@ async def get_image(filename: str):
     if os.path.exists(file_path):
         return FileResponse(file_path)
     return JSONResponse(status_code=404, content={"error": "Image not found"})
+
 
 @app.post("/analyze")
 async def analyze_retina(file: UploadFile = File(...)):
@@ -118,11 +155,9 @@ async def analyze_retina(file: UploadFile = File(...)):
             detail="AI Pipeline Engine is structurally offline. Check server initialization logs."
         )
     
-    # Validate file
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
     
-    # Validate file type
     allowed_extensions = ['.jpg', '.jpeg', '.png', '.tiff', '.tif', '.bmp']
     file_ext = os.path.splitext(file.filename)[1].lower()
     if file_ext not in allowed_extensions:
@@ -134,17 +169,14 @@ async def analyze_retina(file: UploadFile = File(...)):
     temp_input_path = f"temp_upload_stream_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}"
     
     try:
-        # 1. Write uploaded bytes to disk
         with open(temp_input_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
         print(f"[+] File saved: {temp_input_path}")
             
-        # 2. Create output directory
         output_directory = "./output_results"
         os.makedirs(output_directory, exist_ok=True)
         
-        # 3. Run inference
         print("[+] Running inference on integrated_clinical_engine...")
         report = pipeline_engine.execute_single_inference(
             temp_input_path, 
@@ -153,20 +185,16 @@ async def analyze_retina(file: UploadFile = File(...)):
         )
         print("[+] Inference completed successfully")
         
-        # 4. Clean up temp file
         if os.path.exists(temp_input_path):
             os.remove(temp_input_path)
             print(f"[+] Removed temp file: {temp_input_path}")
             
-        # 5. Check for rejection
         if report.get("status") == "Rejected":
             raise HTTPException(status_code=400, detail=report.get("reason", "Image rejected by quality check"))
             
-        # 6. Transform the response for frontend
         transformed_report = ReportTransformer(report).transform()
         print("[+] Report transformed for frontend")
         
-        # ✅ Print clinical report preview
         if "clinicalReport" in transformed_report:
             print("[+] LLM Clinical Report included in response")
             print("-" * 50)
@@ -176,10 +204,8 @@ async def analyze_retina(file: UploadFile = File(...)):
         return JSONResponse(content=transformed_report)
         
     except HTTPException as http_err:
-        # Re-raise HTTP exceptions so FastAPI handles them properly
         raise http_err
     except Exception as e:
-        # Emergency exception cleanup sequence
         if os.path.exists(temp_input_path):
             try:
                 os.remove(temp_input_path)
@@ -203,9 +229,7 @@ class LongitudinalRequest(BaseModel):
 async def longitudinal_analysis(payload: LongitudinalRequest):
     """
     Given a chronological (oldest-first) list of a single patient's compact visit
-    summaries (current scan + up to 3 previous) plus their prior Detailed Analyses,
-    asks the LLM for a trend narrative and advice synthesizing both — DR grade
-    progression, organ-risk trajectory, and what the Detailed Analyses confirm or add.
+    summaries plus prior Detailed Analyses, generates a trend narrative and advice.
     """
     if pipeline_engine is None or pipeline_engine.report_generator is None:
         raise HTTPException(status_code=503, detail="LLM report engine is offline. Check server initialization logs.")
@@ -223,7 +247,6 @@ async def longitudinal_analysis(payload: LongitudinalRequest):
     return JSONResponse(content=result)
 
 
-# Text forwarded to the LLM is capped so a long/noisy OCR result can't blow out the prompt.
 MAX_OCR_TEXT_CHARS = 6000
 DETAILED_ANALYSIS_ALLOWED_EXTENSIONS = ['.pdf', '.jpg', '.jpeg']
 
@@ -237,10 +260,8 @@ async def detailed_test_analysis(
     previous_reports: str = Form("[]"),
 ):
     """
-    Detailed Analysis flow: a doctor uploads a follow-up diagnostic test report (e.g. the
-    Lipid Profile/ECG/OCT suggested for this patient). The file is OCR'd, and the extracted
-    text is correlated by the LLM against the patient's current retinal screening findings
-    and recent visit history to produce a structured clinical analysis.
+    Detailed Analysis flow: extracts text from follow-up diagnostic reports (OCR)
+    and correlates results with patient's screening findings using LLM.
     """
     if pipeline_engine is None or pipeline_engine.report_generator is None:
         raise HTTPException(status_code=503, detail="LLM report engine is offline. Check server initialization logs.")
@@ -297,9 +318,6 @@ async def detailed_test_analysis(
         previous_reports=previous_reports_list,
     )
 
-    # generate_detailed_test_analysis() never raises on a bad/failed LLM call — it falls
-    # back to an all-empty result instead, so the report would otherwise render as blank
-    # section headers with a 200 OK and no indication anything went wrong.
     if not result.get("clinicalSummary") and not result.get("testFindings"):
         raise HTTPException(
             status_code=502,
@@ -312,15 +330,10 @@ async def detailed_test_analysis(
 
 class ReportTransformer:
     """
-    Converts a raw pipeline report (from RetiNexusFullPipeline) into the JSON shape
-    the Next.js frontend expects. Same computations as the original flat function,
-    just organized into class methods for readability and reuse.
+    Converts a raw pipeline report into the JSON shape expected by the frontend.
     """
-
     GRADE_MAP = {0: "No DR", 1: "Mild NPDR", 2: "Moderate NPDR", 3: "Severe NPDR", 4: "PDR"}
 
-    # DR-grade-indexed normal ranges. Grade 4 (PDR) doubles as the fallback for any
-    # unexpected grade value, matching the original function's `else` branch.
     NORMAL_RANGES_BY_GRADE = {
         0: {"tortuosity": (0.5, 1.2), "density": (10, 25), "branching": (50, 150), "avr": (0.55, 0.75), "micro": (0, 0), "hemo": (0, 0), "hard": (0, 0), "soft": (0, 0)},
         1: {"tortuosity": (0.5, 1.3), "density": (8, 28), "branching": (40, 180), "avr": (0.50, 0.78), "micro": (0, 2), "hemo": (0, 1), "hard": (0, 0), "soft": (0, 0)},
@@ -359,19 +372,17 @@ class ReportTransformer:
                 "overallRisk": self._risk_value("cardiovascular_risk_index"),
                 "processedAt": datetime.now().isoformat(),
                 "raw_report": self.report,
-                "clinicalReport": self._clinical_report_text(),  # ✅ LLM clinical report (Roman Urdu)
-                "organInterpretation": self._organ_interpretation(),  # ✅ Per-organ plain-English summary
-                "interpretation": self._interpretation_paragraph(),  # legacy single-paragraph fallback
-                "predictedRisk": self._predicted_risk(),  # ✅ 1-year / 5-year outlook, grounded in the DR-grade clinical reference scale
-                "suggestedTests": self._suggested_tests(),  # ✅ LLM-picked follow-up tests (grade 2+)
+                "clinicalReport": self._clinical_report_text(),
+                "organInterpretation": self._organ_interpretation(),
+                "interpretation": self._interpretation_paragraph(),
+                "predictedRisk": self._predicted_risk(),
+                "suggestedTests": self._suggested_tests(),
             }
         except Exception as e:
             print(f"[!] Error transforming report: {e}")
             import traceback
             traceback.print_exc()
             return self.report
-
-    # ── helpers ──────────────────────────────────────────────────────────
 
     @staticmethod
     def _status_for(value, low, high):
@@ -500,15 +511,15 @@ class ReportTransformer:
         summary = organ.get("summary", "")
         if summary:
             return summary
-        # Fallback if the model ever omits "summary": stitch the per-organ lines together.
         return " ".join(v for v in self._organ_interpretation().values() if v)
+
 
 if __name__ == "__main__":
     import uvicorn
     print("\n" + "="*50)
     print("[*] Starting RetiNexus Backend Server...")
     print("[*] Server will run on: http://127.0.0.1:8001")
-    print("[*] LLM (Gemini AI) Integrated for Clinical Reports")
+    print("[*] LLM Integrated for Clinical Reports")
     print("[*] Press Ctrl+C to stop")
     print("="*50 + "\n")
     uvicorn.run(
