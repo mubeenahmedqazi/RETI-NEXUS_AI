@@ -43,7 +43,7 @@ async function main() {
     }
   }
 
-  console.log(`Embedding ${allChunks.length} chunks locally (first run downloads the embedding model, ~90MB)...`);
+  console.log(`Embedding ${allChunks.length} chunks via the Hugging Face Inference API (requires HF_TOKEN)...`);
   const embeddings = await embedTexts(allChunks.map((c) => c.text));
 
   const index: KnowledgeChunk[] = allChunks.map((chunk, i) => ({
