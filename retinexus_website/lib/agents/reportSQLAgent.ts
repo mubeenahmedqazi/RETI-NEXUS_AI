@@ -2,11 +2,20 @@ import { ChatGroq } from '@langchain/groq';
 import { BaseMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { getPool } from '../db';
 
-const model = new ChatGroq({
-  model: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
-  apiKey: process.env.GROQ_API_KEY,
-  temperature: 0,
-});
+// Lazily constructed — see the matching comment in ../agents/graph.ts's routerModel for why:
+// ChatGroq throws synchronously on a missing GROQ_API_KEY, and building it eagerly at
+// module scope turned a missing key into a whole-route-crash instead of a caught error.
+let model: ChatGroq | null = null;
+function getModel(): ChatGroq {
+  if (!model) {
+    model = new ChatGroq({
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
+      apiKey: process.env.GROQ_API_KEY,
+      temperature: 0,
+    });
+  }
+  return model;
+}
 
 export interface ReportLookupSlots {
   patientName?: string;
@@ -29,7 +38,7 @@ export async function extractSlots(history: BaseMessage[]): Promise<ReportLookup
   if (!text.trim()) return {};
 
   try {
-    const response = await model.invoke(
+    const response = await getModel().invoke(
       [new SystemMessage(EXTRACTION_PROMPT), new HumanMessage(text)],
       { response_format: { type: 'json_object' } },
     );

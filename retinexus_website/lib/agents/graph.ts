@@ -6,11 +6,22 @@ import { streamEyeAnswer } from './eyeDoctorAgent';
 import { extractSlots, isRateLimited, missingSlots, type ReportLookupSlots } from './reportSQLAgent';
 import { mcpLookupReport } from '../mcp/client';
 
-const routerModel = new ChatGroq({
-  model: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
-  apiKey: process.env.GROQ_API_KEY,
-  temperature: 0,
-});
+// Lazily constructed: ChatGroq's constructor throws synchronously if GROQ_API_KEY is
+// missing. Building it at module scope meant a missing/misconfigured key crashed this
+// entire route module on load (surfacing as Next.js's generic "page couldn't load" 500,
+// not a friendly in-widget error) — deferring it to first use lets the route's own
+// try/catch (app/api/chat/route.ts) turn that into a normal streamed error message.
+let routerModel: ChatGroq | null = null;
+function getRouterModel(): ChatGroq {
+  if (!routerModel) {
+    routerModel = new ChatGroq({
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
+      apiKey: process.env.GROQ_API_KEY,
+      temperature: 0,
+    });
+  }
+  return routerModel;
+}
 
 // --- State schema -----------------------------------------------------------
 
@@ -54,7 +65,7 @@ async function supervisorNode(state: State): Promise<Partial<State>> {
   const lastHuman = [...state.messages].reverse().find((m) => m instanceof HumanMessage);
   const text = typeof lastHuman?.content === 'string' ? lastHuman.content : '';
 
-  const response = await routerModel.invoke([new SystemMessage(ROUTER_PROMPT), new HumanMessage(text)]);
+  const response = await getRouterModel().invoke([new SystemMessage(ROUTER_PROMPT), new HumanMessage(text)]);
   const decision = (typeof response.content === 'string' ? response.content : '').toUpperCase();
   return { route: decision.includes('REPORT_SQL') ? 'report_sql' : 'eye_doctor' };
 }

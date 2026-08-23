@@ -2,11 +2,20 @@ import { ChatGroq } from '@langchain/groq';
 import { BaseMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { mcpSearchKnowledge } from '../mcp/client';
 
-const model = new ChatGroq({
-  model: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
-  apiKey: process.env.GROQ_API_KEY,
-  temperature: 0.3,
-});
+// Lazily constructed — see the matching comment in ../agents/graph.ts's routerModel for why:
+// ChatGroq throws synchronously on a missing GROQ_API_KEY, and building it eagerly at
+// module scope turned a missing key into a whole-route-crash instead of a caught error.
+let model: ChatGroq | null = null;
+function getModel(): ChatGroq {
+  if (!model) {
+    model = new ChatGroq({
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
+      apiKey: process.env.GROQ_API_KEY,
+      temperature: 0.3,
+    });
+  }
+  return model;
+}
 
 /**
  * Ophthalmology-only guardrail: the model must refuse anything outside eye
@@ -51,7 +60,7 @@ export async function streamEyeAnswer(history: BaseMessage[], onToken?: (text: s
 
   const promptMessages = [new SystemMessage(SYSTEM_PROMPT), new SystemMessage(context), ...history];
 
-  const stream = await model.stream(promptMessages);
+  const stream = await getModel().stream(promptMessages);
   let full = '';
   for await (const piece of stream) {
     const text = typeof piece.content === 'string' ? piece.content : '';
