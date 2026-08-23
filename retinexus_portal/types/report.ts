@@ -74,5 +74,57 @@ export interface ReportData {
     kidney?: string;
     brain?: string;
   };
+  /** 1-year / 5-year outlook, grounded in the DR-grade clinical reference scale (eye/kidney/heart). */
+  predictedRisk?: {
+    oneYear?: string;
+    fiveYear?: string;
+  };
   clinicalReport?: string;
+  /** LLM-picked follow-up tests (0-2), only populated for DR grade Moderate NPDR and above. */
+  suggestedTests?: string[];
+}
+
+/** LLM-generated narrative comparing a patient's DR grade and organ-risk trend across visits. */
+export interface LongitudinalAnalysis {
+  overallTrend: 'improving' | 'stable' | 'worsening' | 'mixed';
+  summary: string;
+  heartTrend: string;
+  kidneyTrend: string;
+  brainTrend: string;
+  keyChanges: string[];
+  recommendation: string;
+}
+
+/** Compact per-visit shape sent to the longitudinal-analysis endpoint (oldest visit first). */
+export interface LongitudinalVisit {
+  date: string;
+  drGrade: string;
+  riskFactors: { cardiovascular: number; kidney: number; cerebrovascular: number };
+  biomarkers: { vesselTortuosity: number; vesselDensity: number; branchingPoints: number; avr: number };
+  lesionCounts: { microaneurysms: number; haemorrhages: number; hardExudates: number; softExudates: number };
+}
+
+/** LLM-authored clinical report correlating an uploaded follow-up test (OCR'd) with the
+ * patient's screening findings and recent visit history. */
+export interface DetailedTestAnalysis {
+  clinicalSummary: string;
+  testFindings: string;
+  organFindings: { heart: string; kidney: string; brain: string };
+  redFlags: string[];
+  recommendations: string[];
+  urgency: 'routine' | 'priority' | 'urgent';
+  extractionMethod?: 'native' | 'ocr' | 'mixed';
+}
+
+/** Context handed from ReportDisplay to the Detailed Analysis page via sessionStorage. */
+export interface DetailedAnalysisContext {
+  report: ReportData;
+  /** The saved screening Report's database id, when known — links a saved Detailed
+   * Analysis back to the specific screening report it correlates with. */
+  reportId?: string;
+  patientId: string;
+  patientName: string;
+  patientAge?: number | string;
+  patientGender?: string;
+  suggestedTests: string[];
 }

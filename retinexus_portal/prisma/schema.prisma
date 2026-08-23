@@ -20,8 +20,9 @@ model User {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  patients       Patient[] @relation("DoctorPatient")
-  reports        Report[]  @relation("DoctorReports")
+  patients          Patient[]          @relation("DoctorPatient")
+  reports           Report[]           @relation("DoctorReports")
+  detailedAnalyses  DetailedAnalysis[] @relation("DoctorDetailedAnalyses")
 
   @@map("users")
 }
@@ -39,14 +40,16 @@ model Patient {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  doctor        User?    @relation("DoctorPatient", fields: [doctorId], references: [id])
-  reports       Report[] @relation("PatientReports")
+  doctor            User?              @relation("DoctorPatient", fields: [doctorId], references: [id])
+  reports           Report[]           @relation("PatientReports")
+  detailedAnalyses  DetailedAnalysis[] @relation("PatientDetailedAnalyses")
 
   @@map("patients")
 }
 
 model Report {
   id            String   @id @default(cuid())
+  reportNumber  Int      @unique @default(autoincrement())
   patientId     String
   patientName   String
   doctorId      String
@@ -64,8 +67,34 @@ model Report {
 
   patient       Patient  @relation("PatientReports", fields: [patientId], references: [id])
   doctor        User     @relation("DoctorReports", fields: [doctorId], references: [id])
+  detailedAnalyses DetailedAnalysis[] @relation("ReportDetailedAnalyses")
 
   @@map("reports")
+}
+
+// A saved Detailed Analysis: a follow-up test (e.g. Lipid Profile, ECG) uploaded by the
+// doctor, OCR'd, and correlated by the LLM against the patient's screening report + recent
+// visit history. Linked back to the screening Report it was run against where available.
+model DetailedAnalysis {
+  id               String   @id @default(cuid())
+  patientId        String
+  doctorId         String
+  reportId         String?
+  testName         String
+  clinicalSummary  String
+  testFindings     String
+  organFindings    Json
+  redFlags         String[]
+  recommendations  String[]
+  urgency          String
+  extractionMethod String?
+  createdAt        DateTime @default(now())
+
+  patient          Patient  @relation("PatientDetailedAnalyses", fields: [patientId], references: [id])
+  doctor           User     @relation("DoctorDetailedAnalyses", fields: [doctorId], references: [id])
+  report           Report?  @relation("ReportDetailedAnalyses", fields: [reportId], references: [id])
+
+  @@map("detailed_analyses")
 }
 
 enum Role {

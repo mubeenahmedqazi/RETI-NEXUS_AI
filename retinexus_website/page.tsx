@@ -3,6 +3,7 @@ import Hero from './components/Hero';
 import WhatIsDR from './components/WhatIsDR';
 import WhyItMatters from './components/WhyItMatters';
 import Footer from './components/Footer';
+import ChatWidget from '@/components/ChatWidget';
 
 /**
  * RetiNexus AI presentation / marketing portal.
@@ -19,6 +20,7 @@ export default function RetinexusWebsite() {
       <WhatIsDR />
       <WhyItMatters />
       <Footer />
+      <ChatWidget />
     </div>
   );
 }

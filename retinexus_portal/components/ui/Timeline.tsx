@@ -1,8 +1,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { CheckCircle2, LucideIcon, Loader2 } from 'lucide-react';
+import { CheckCircle2, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Swirling } from './Swirling';
 
 export interface TimelineStep {
   icon: LucideIcon;
@@ -42,7 +43,7 @@ export default function Timeline({
                   {isDone ? (
                     <CheckCircle2 className="w-4 h-4" />
                   ) : isActive ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Swirling className="w-4 h-4" style={{ color: 'var(--brand-secondary)' }} />
                   ) : (
                     <Icon className="w-4 h-4" />
                   )}
@@ -90,9 +91,7 @@ export default function Timeline({
                   <CheckCircle2 className="w-6 h-6 text-emerald-500" />
                 </motion.div>
               ) : isActive ? (
-                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
-                  <Loader2 className="w-6 h-6 text-[var(--brand-accent)]" />
-                </motion.div>
+                <Swirling className="w-6 h-6" style={{ color: 'var(--brand-secondary)' }} />
               ) : (
                 <div className="w-6 h-6 rounded-full border-2 border-[var(--border-strong)] flex items-center justify-center">
                   <Icon className="w-3 h-3 text-[var(--subtle-foreground)]" />

@@ -33,18 +33,18 @@ export default function BiomarkerCard({ biomarker, index }: { biomarker: Biomark
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06 }}
       whileHover={{ y: -2 }}
-      className="rounded-xl p-4 border transition-shadow hover:shadow-md group"
+      className="biomarker-card rounded-xl p-4 border transition-shadow hover:shadow-md group"
       style={{ borderColor: 'var(--border)' }}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg" style={{ background: `${color}1a` }}>
+        <div className="biomarker-icon-row flex items-center gap-2">
+          <div className="biomarker-icon p-1.5 rounded-lg" style={{ background: `${color}1a` }}>
             <Icon className="w-3.5 h-3.5" style={{ color }} />
           </div>
           <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>{biomarker.name}</span>
         </div>
         <span
-          className="text-[10px] px-2 py-0.5 rounded-full font-medium capitalize"
+          className="biomarker-status text-[10px] px-2 py-0.5 rounded-full font-medium capitalize"
           style={{ background: `${color}1a`, color }}
         >
           {biomarker.status}
@@ -56,8 +56,8 @@ export default function BiomarkerCard({ biomarker, index }: { biomarker: Biomark
         <span className="text-xs" style={{ color: 'var(--subtle-foreground)' }}>{biomarker.unit}</span>
       </div>
 
-      {/* mini range bar */}
-      <div className="relative mt-3 h-1.5 rounded-full" style={{ background: 'var(--muted)' }}>
+      {/* mini range bar — decorative, dropped from the print layout */}
+      <div className="biomarker-rangebar relative mt-3 h-1.5 rounded-full" style={{ background: 'var(--muted)' }}>
         <div
           className="absolute top-0 bottom-0 rounded-full bg-emerald-500/20"
           style={{ left: `${bandStart}%`, width: `${Math.max(bandEnd - bandStart, 2)}%` }}
@@ -70,7 +70,7 @@ export default function BiomarkerCard({ biomarker, index }: { biomarker: Biomark
           transition={{ duration: 0.7, delay: index * 0.06 }}
         />
       </div>
-      <div className="text-[10px] mt-1.5" style={{ color: 'var(--subtle-foreground)' }}>
+      <div className="biomarker-range-caption text-[10px] mt-1.5" style={{ color: 'var(--subtle-foreground)' }}>
         Normal: {min}–{max} {biomarker.unit}
       </div>
     </motion.div>

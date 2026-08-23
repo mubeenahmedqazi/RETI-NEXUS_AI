@@ -56,7 +56,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-[var(--background)] text-[var(--foreground)] antialiased overflow-x-hidden">
         <ThemeProvider>
-          <div className="fixed inset-0 -z-10 pointer-events-none">
+          <div className="fixed inset-0 -z-10 pointer-events-none no-print">
             <div className="absolute inset-0 bg-[var(--background)]" />
             <div className="absolute inset-0 bg-dot-grid opacity-60" />
             <div className="absolute top-0 left-0 h-96 w-96 rounded-full bg-[var(--brand-secondary)]/[0.06] blur-3xl" />

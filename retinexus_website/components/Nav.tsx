@@ -48,7 +48,7 @@ export default function Nav() {
       style={{ pointerEvents: hiddenForEyeJourney ? 'none' : 'auto' }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6">
-        <div className="rounded-2xl backdrop-blur-md bg-white/80 dark:bg-slate-900/70 border border-slate-200/80 dark:border-white/10 shadow-lg shadow-slate-900/[0.06] dark:shadow-black/20">
+        <div className="rounded-2xl backdrop-blur-lg bg-white/45 dark:bg-slate-900/40 border border-slate-200/60 dark:border-white/10 shadow-lg shadow-slate-900/[0.06] dark:shadow-black/20">
           <div className="px-4 sm:px-6 py-3 flex items-center justify-between">
             <Link href="/" className="hover-wobble">
               <Logo size={44} withWordmark withTagline />
@@ -110,7 +110,7 @@ export default function Nav() {
               animate={{ opacity: 1, y: 0, height: 'auto' }}
               exit={{ opacity: 0, y: -8, height: 0 }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-2 rounded-3xl overflow-hidden backdrop-blur-md bg-white/90 dark:bg-slate-900/85 border border-slate-200/80 dark:border-white/10 shadow-xl lg:hidden"
+              className="mt-2 rounded-3xl overflow-hidden backdrop-blur-lg bg-white/70 dark:bg-slate-900/65 border border-slate-200/70 dark:border-white/10 shadow-xl lg:hidden"
             >
               <div className="px-6 py-4 flex flex-col gap-1">
                 {links.map((l) => {

@@ -159,8 +159,16 @@ def extract_vessel_features(binary_mask):
         skeleton_clean.astype(np.float32), -1, kernel)
     # Branch point = skeleton pixel + 3 ya zyada neighbors
     # neighbor_cnt includes self, so threshold = 4 (self + 3 neighbors)
-    branch_map      = (skeleton_clean == 1) & (neighbor_cnt >= 4)
-    branching_points = int(branch_map.sum())
+    branch_map = (skeleton_clean == 1) & (neighbor_cnt >= 4)
+
+    # A single real Y/X-junction in a raster skeleton almost always spans a small
+    # cluster of 2-4 adjacent pixels that all satisfy the neighbor-count test above —
+    # counting raw pixels here systematically inflates the branch count (one true
+    # junction reported as several). Cluster adjacent branch pixels with 8-connectivity
+    # and count clusters instead, so each true junction contributes exactly once.
+    branch_clusters, branching_points = ndi.label(
+        branch_map, structure=np.ones((3, 3))
+    )
 
     # ── 3. ARTERIOLAR TO VENULAR RATIO (AVR) ─────────────────
     # Distance transform → vessel radius at each point

@@ -107,7 +107,7 @@ export default function PatientLayout({
       </AnimatePresence>
 
       {/* Sidebar */}
-      <div className="fixed left-0 top-0 h-full z-50">
+      <div className="fixed left-0 top-0 h-full z-50 no-print">
         <PatientSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       </div>
 
@@ -115,7 +115,7 @@ export default function PatientLayout({
       <AnimatePresence>
         {isMobile && isSidebarOpen && (
           <motion.div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden no-print"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

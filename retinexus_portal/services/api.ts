@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import { ReportData } from '@/types/report';
+import { ReportData, LongitudinalAnalysis, LongitudinalVisit, DetailedTestAnalysis } from '@/types/report';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001';
 
@@ -115,10 +115,13 @@ export const getReports = async () => {
   }
 };
 
-// ✅ Get all patients for the authenticated doctor
-export const getPatients = async () => {
+// ✅ Get all patients for the authenticated doctor. Pass `phone` to also search
+// beyond this doctor's own patients — for finding a patient by phone number
+// who was self-registered or registered by a different doctor.
+export const getPatients = async (phone?: string) => {
   try {
-    const response = await fetch('/api/patients', {
+    const url = phone ? `/api/patients?phone=${encodeURIComponent(phone)}` : '/api/patients';
+    const response = await fetch(url, {
       credentials: 'include',
     });
     if (!response.ok) {
@@ -127,6 +130,67 @@ export const getPatients = async () => {
     return await response.json();
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : 'Failed to fetch patients');
+  }
+};
+
+/** Compact prior Detailed Analysis summary sent alongside screening visits to the longitudinal endpoint. */
+export interface LongitudinalDetailedAnalysis {
+  date: string;
+  testName: string;
+  urgency: string;
+  clinicalSummary: string;
+}
+
+// ✅ Ask the LLM to compare a patient's DR grade/risk trend across their visit history,
+// synthesized together with their prior Detailed Analyses (if any).
+// `visits` must be chronological, oldest-first, and include the current scan as the last entry.
+export const generateLongitudinalAnalysis = async (
+  visits: LongitudinalVisit[],
+  detailedAnalyses: LongitudinalDetailedAnalysis[] = []
+): Promise<LongitudinalAnalysis> => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/longitudinal-analysis`,
+      { visits, detailed_analyses: detailedAnalyses },
+      { headers: { 'Content-Type': 'application/json' }, timeout: 60000 }
+    );
+    return response.data;
+  } catch (error) {
+    const axiosError = error as AxiosError<{ detail?: string }>;
+    throw new Error(axiosError.response?.data?.detail || axiosError.message);
+  }
+};
+
+// ✅ Detailed Analysis: upload a follow-up test report (PDF/JPG/JPEG), OCR it on the backend
+// (which also verifies the patient's name appears in the extracted text before analyzing),
+// and correlate it against the patient's current screening findings + recent visit history.
+// `currentVisit`/`previousVisits` must be compact visit summaries (see toVisitSummary in
+// lib/reportVisitSummary.ts) — never the full ReportData object, whose embedded raw_report
+// (classifier internals, image paths, the whole markdown report text) bloats the prompt
+// enough to degrade or silently fail the LLM call.
+export const submitDetailedTestAnalysis = async (
+  file: File,
+  testName: string,
+  patientName: string,
+  currentVisit: LongitudinalVisit,
+  previousVisits: LongitudinalVisit[]
+): Promise<DetailedTestAnalysis> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('test_name', testName);
+    formData.append('patient_name', patientName);
+    formData.append('current_report', JSON.stringify(currentVisit));
+    formData.append('previous_reports', JSON.stringify(previousVisits));
+
+    const response = await axios.post(`${API_BASE_URL}/detailed-test-analysis`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 90000,
+    });
+    return response.data;
+  } catch (error) {
+    const axiosError = error as AxiosError<{ detail?: string }>;
+    throw new Error(axiosError.response?.data?.detail || axiosError.message);
   }
 };
 

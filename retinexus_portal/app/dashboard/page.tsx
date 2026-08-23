@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import {
   Users, FileText, Eye, TrendingUp,
-  ArrowUpRight, ChevronRight, Hospital, Stethoscope, ScanEye,
+  Hospital, Stethoscope, ScanEye,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
@@ -12,8 +11,7 @@ import { getReports, getPatients } from '@/services/api';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/ui/PageHeader';
 import MetricCard from '@/components/ui/MetricCard';
-import Badge, { gradeToTone } from '@/components/ui/Badge';
-import EmptyState from '@/components/ui/EmptyState';
+import Badge from '@/components/ui/Badge';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 
 const GRADE_COLORS: Record<string, string> = {
@@ -76,7 +74,6 @@ export default function DashboardPage() {
 
   const totalPatients = patients.length;
   const totalReports = reports.length;
-  const recentReports = reports.slice(0, 3);
   const normalCount = reports.filter((r) => r.drGrade === 'No DR').length;
   const abnormalCount = totalReports - normalCount;
 
@@ -119,7 +116,7 @@ export default function DashboardPage() {
         }
         actions={
           <button
-            onClick={() => router.push('/dashboard/upload')}
+            onClick={() => router.push('/dashboard/patients')}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[var(--brand-secondary)] to-[var(--brand-accent)] text-white font-medium hover:shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 hover:scale-105 whitespace-nowrap"
           >
             <ScanEye className="w-4 h-4" />
@@ -203,65 +200,6 @@ export default function DashboardPage() {
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
-
-      {/* Recent Reports */}
-      <div className="surface rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
-            <FileText className="w-5 h-5 text-[var(--brand-secondary)]" />
-            Recent Reports
-          </h3>
-          <button onClick={() => router.push('/dashboard/reports')} className="text-xs text-[var(--brand-secondary)] hover:underline flex items-center gap-1">
-            View All <ChevronRight className="w-3 h-3" />
-          </button>
-        </div>
-
-        {recentReports.length === 0 ? (
-          <EmptyState icon={FileText} title="No reports yet" description="Upload your first fundus scan to start screening." action={
-            <button onClick={() => router.push('/dashboard/upload')} className="text-[var(--brand-secondary)] hover:underline text-sm">Upload your first scan →</button>
-          } />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {recentReports.map((report, index) => (
-              <motion.div
-                key={report.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                whileHover={{ y: -3 }}
-                className="rounded-xl p-4 border cursor-pointer transition-all duration-300 hover:shadow-lg"
-                style={{ borderColor: 'var(--border)' }}
-                onClick={() => router.push('/dashboard/reports')}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="p-2 rounded-lg bg-[var(--brand-secondary)]/10 flex-shrink-0">
-                      <FileText className="w-4 h-4 text-[var(--brand-secondary)]" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: 'var(--foreground)' }}>{report.patientName || 'Unknown Patient'}</p>
-                      <p className="text-xs" style={{ color: 'var(--subtle-foreground)' }}>ID: {report.patientId}</p>
-                    </div>
-                  </div>
-                  <ArrowUpRight className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--subtle-foreground)' }} />
-                </div>
-
-                <div className="mt-3 flex items-center justify-between">
-                  <Badge tone={gradeToTone(report.drGrade)}>{report.drGrade || 'N/A'}</Badge>
-                  <span className="text-xs" style={{ color: 'var(--subtle-foreground)' }}>
-                    {format(new Date(report.approvedAt || report.createdAt), 'MMM d, yyyy')}
-                  </span>
-                </div>
-
-                <div className="mt-2 flex items-center gap-1 text-xs" style={{ color: 'var(--subtle-foreground)' }}>
-                  <Eye className="w-3 h-3" />
-                  {(report.confidence * 100).toFixed(0)}% confidence
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

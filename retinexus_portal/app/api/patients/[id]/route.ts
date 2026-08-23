@@ -50,6 +50,9 @@ export async function GET(
           reports: {
             orderBy: { createdAt: 'desc' }
             // ✅ No doctorId filter - show ALL reports
+          },
+          detailedAnalyses: {
+            orderBy: { createdAt: 'desc' }
           }
         }
       });
@@ -88,6 +91,9 @@ export async function GET(
         reports: {
           orderBy: { createdAt: 'desc' }
           // ✅ No doctorId filter - show ALL reports
+        },
+        detailedAnalyses: {
+          orderBy: { createdAt: 'desc' }
         }
       }
     });
@@ -126,8 +132,10 @@ export async function GET(
           hospital: patientWithReports.doctor?.hospital || 'Unknown',
         },
         reports: patientWithReports.reports, // ✅ All reports
+        detailedAnalyses: patientWithReports.detailedAnalyses, // ✅ All saved detailed analyses
         _count: {
-          reports: patientWithReports.reports.length
+          reports: patientWithReports.reports.length,
+          detailedAnalyses: patientWithReports.detailedAnalyses.length
         }
       },
       message: belongsToCurrentDoctor

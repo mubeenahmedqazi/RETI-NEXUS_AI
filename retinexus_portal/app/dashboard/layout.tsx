@@ -96,7 +96,7 @@ export default function DashboardLayout({
       <AnimatePresence>
         {isMobile && isSidebarOpen && (
           <motion.div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden no-print"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -106,7 +106,7 @@ export default function DashboardLayout({
       </AnimatePresence>
 
       {/* Sidebar */}
-      <div className="fixed left-0 top-0 h-full z-50">
+      <div className="fixed left-0 top-0 h-full z-50 no-print">
         <Sidebar
           isOpen={isSidebarOpen}
           setIsOpen={setIsSidebarOpen}

@@ -3,6 +3,7 @@
 import { forwardRef, ButtonHTMLAttributes, ReactNode } from 'react';
 import { motion, MotionProps } from 'framer-motion';
 import clsx from 'clsx';
+import { Swirling } from '../ui/Swirling';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success' | 'warning';
@@ -86,26 +87,7 @@ const Button = forwardRef<HTMLButtonElement, MotionButtonProps>(
       >
         {loading ? (
           <>
-            <svg
-              className="h-5 w-5 animate-spin"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-20"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-90"
-                fill="currentColor"
-                d="M12 2a10 10 0 0110 10h-4a6 6 0 00-6-6V2z"
-              />
-            </svg>
+            <Swirling className="h-5 w-5" style={{ color: 'var(--brand-secondary)' }} />
             <span>Processing...</span>
           </>
         ) : (

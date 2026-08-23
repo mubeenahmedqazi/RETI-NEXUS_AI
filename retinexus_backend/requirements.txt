@@ -14,3 +14,9 @@ Pillow
 segmentation-models-pytorch
 timm
 ultralytics
+
+# Detailed Analysis: OCR for uploaded follow-up test reports (PDF/JPG/JPEG).
+# pytesseract is a wrapper — it also requires the Tesseract OCR engine itself installed
+# on the machine (not pip-installable): https://github.com/UB-Mannheim/tesseract/wiki
+pytesseract
+PyMuPDF

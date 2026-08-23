@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, ScanEye, Network, ScanSearch, FlaskConical, Gauge, FileText, Loader2 } from 'lucide-react';
+import { Upload, ScanEye, Network, ScanSearch, FlaskConical, Gauge, FileText } from 'lucide-react';
 import ProgressRing from '@/components/ui/ProgressRing';
 import Timeline, { TimelineStep } from '@/components/ui/Timeline';
+import { Swirling } from '@/components/ui/Swirling';
 
 const steps: TimelineStep[] = [
   { icon: Upload, label: 'Image Upload', description: 'Receiving and validating the fundus photograph' },
@@ -22,9 +23,9 @@ export default function AnalysisLoader() {
   const [isComplete, setIsComplete] = useState(false);
 
   useEffect(() => {
-    const stepDuration = 1100;
-    const totalDuration = stepDuration * steps.length;
-    const increment = 100 / (totalDuration / 80);
+    const totalDuration = 30000;
+    const tickMs = 80;
+    const increment = 100 / (totalDuration / tickMs);
 
     const interval = setInterval(() => {
       setProgress((prev) => {
@@ -38,7 +39,7 @@ export default function AnalysisLoader() {
         }
         return newProgress;
       });
-    }, 80);
+    }, tickMs);
 
     return () => clearInterval(interval);
   }, []);
@@ -75,7 +76,7 @@ export default function AnalysisLoader() {
 
           <motion.div className="mt-6 text-center" animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 2, repeat: Infinity }}>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--brand-accent)]/10 border border-[var(--brand-accent)]/20">
-              <Loader2 className="w-4 h-4 text-[var(--brand-accent)] animate-spin" />
+              <Swirling className="w-4 h-4" style={{ color: 'var(--brand-secondary)' }} />
               <span className="text-sm font-medium text-[var(--brand-accent)]">
                 {isComplete ? 'Finalizing results...' : 'Processing with AI model...'}
               </span>

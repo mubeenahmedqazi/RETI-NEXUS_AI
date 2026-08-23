@@ -60,9 +60,14 @@ export default function PatientsPage() {
   const [scanPatient, setScanPatient] = useState<Patient | null>(null);
   const [approvingReport, setApprovingReport] = useState<string | null>(null);
   const [isAddingPatient, setIsAddingPatient] = useState(false);
+  const [currentDoctorId, setCurrentDoctorId] = useState('');
 
   useEffect(() => {
     loadPatients();
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data?.id && setCurrentDoctorId(data.id))
+      .catch((error) => console.error('Failed to fetch current doctor:', error));
   }, []);
 
   const loadPatients = async () => {
@@ -77,8 +82,9 @@ export default function PatientsPage() {
     }
   };
 
-  const handleSearch = () => {
-    const term = searchTerm.trim().toLowerCase();
+  const handleSearch = async () => {
+    const rawTerm = searchTerm.trim();
+    const term = rawTerm.toLowerCase();
     if (!term) {
       setFilteredPatients(patients);
       setShowSearchResults(false);
@@ -88,14 +94,41 @@ export default function PatientsPage() {
       return;
     }
 
-    const matches = patients.filter(
+    const localMatches = patients.filter(
       (p) => p.name?.toLowerCase().includes(term) || p.phone?.includes(term)
     );
 
-    if (matches.length > 0) {
-      setSearchError('');
-      setSearchResultType('own');
-      setFilteredPatients(matches);
+    // A phone-shaped query also searches beyond this doctor's own patients —
+    // a patient may have been self-registered, or seen by a different doctor
+    // first, while sharing that phone number with someone already ours.
+    const looksLikePhone = /^\d{4,}$/.test(rawTerm);
+    let combined = localMatches;
+
+    if (looksLikePhone) {
+      setIsSearching(true);
+      try {
+        const remote: Patient[] = await getPatients(rawTerm);
+        const byId = new Map<string, Patient>();
+        [...localMatches, ...remote].forEach((p) => byId.set(p.id, p));
+        combined = Array.from(byId.values());
+      } catch (error) {
+        console.error('Phone search failed:', error);
+      } finally {
+        setIsSearching(false);
+      }
+    }
+
+    const isOwnPatient = (p: Patient) => patients.some((op) => op.id === p.id);
+
+    if (combined.length > 0) {
+      const allOwn = combined.every(isOwnPatient);
+      setSearchError(
+        allOwn
+          ? ''
+          : `Found ${combined.length} matching patient${combined.length > 1 ? 's' : ''} — some are registered with another doctor or self-registered. Review before starting a scan.`
+      );
+      setSearchResultType(allOwn ? 'own' : 'other');
+      setFilteredPatients(combined);
       setShowSearchResults(true);
     } else {
       setSelectedPatient(null);
@@ -436,7 +469,7 @@ export default function PatientsPage() {
                 <div className="rounded-xl p-4 mb-4" style={{ background: 'var(--muted)' }}>
                   <p className="font-semibold" style={{ color: 'var(--foreground)' }}>{scanPatient.name}</p>
                   <p className="text-sm" style={{ color: 'var(--subtle-foreground)' }}>Phone: {scanPatient.phone}</p>
-                  {scanPatient.doctor && scanPatient.doctorId !== scanPatient.doctor?.id && (
+                  {scanPatient.doctor && scanPatient.doctorId && scanPatient.doctorId !== currentDoctorId && (
                     <p className="text-xs text-amber-500 mt-1">
                       Registered with: Dr. {scanPatient.doctor.name}
                     </p>

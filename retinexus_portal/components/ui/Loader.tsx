@@ -2,12 +2,12 @@
 
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import Logo from './Logo';
+import { Swirling } from './Swirling';
 
 const SIZE_MAP = {
-  sm: { ring: 44, mask: 5, icon: 33 },
-  md: { ring: 88, mask: 8, icon: 65 },
-  lg: { ring: 160, mask: 14, icon: 118 },
+  sm: 28,
+  md: 48,
+  lg: 80,
 };
 
 interface LoaderProps {
@@ -16,31 +16,13 @@ interface LoaderProps {
   className?: string;
 }
 
-/** Retinexus AI's single canonical loading indicator: a rotating scan-ring with a pulsing focal point. */
+/** Retinexus AI's single canonical loading indicator: a swirling cyan ring. */
 export default function Loader({ size = 'md', label, className }: LoaderProps) {
-  const { ring, mask, icon } = SIZE_MAP[size];
+  const ring = SIZE_MAP[size];
 
   return (
     <div className={cn('flex flex-col items-center justify-center gap-3', className)}>
-      <div className="relative" style={{ width: ring, height: ring }}>
-        <motion.div
-          className="absolute inset-0 rounded-full"
-          style={{
-            background: 'conic-gradient(from 0deg, transparent 0%, var(--brand-accent) 35%, var(--brand-secondary) 75%, transparent 100%)',
-            WebkitMaskImage: `radial-gradient(farthest-side, transparent calc(100% - ${mask}px), #000 calc(100% - ${mask}px))`,
-            maskImage: `radial-gradient(farthest-side, transparent calc(100% - ${mask}px), #000 calc(100% - ${mask}px))`,
-          }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1.1, repeat: Infinity, ease: 'linear' }}
-        />
-        <motion.div
-          className="absolute inset-0 flex items-center justify-center"
-          animate={{ scale: [0.85, 1, 0.85], opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <Logo size={icon} frame={false} />
-        </motion.div>
-      </div>
+      <Swirling style={{ width: ring, height: ring, color: 'var(--brand-secondary)' }} />
       {label && (
         <motion.p
           className="text-sm font-medium"

@@ -4,8 +4,14 @@ import { hash } from 'bcryptjs'
 import { prisma } from '@/lib/db'
 import { isValidPhone } from '@/lib/utils'
 
-// GET all patients for the authenticated doctor
-export async function GET() {
+// GET patients for the authenticated doctor. With ?phone=, also searches
+// beyond this doctor's own list — patients self-registered (no doctor yet)
+// or registered by a different doctor — since a phone number can be shared
+// by more than one patient and the doctor needs to find the right one before
+// starting a new scan. Own-patient results and cross-doctor/self-registered
+// results are returned together; the doctor relation is included so the
+// frontend can flag "registered with another doctor" / "self-registered".
+export async function GET(req: NextRequest) {
   try {
     const cookieStore = await cookies()
     const doctorId = cookieStore.get('doctor_id')?.value
@@ -17,10 +23,17 @@ export async function GET() {
       )
     }
 
+    const phone = req.nextUrl.searchParams.get('phone')?.trim()
+
     const patients = await prisma.patient.findMany({
-      where: { doctorId }, // Only get patients for this doctor
+      where: phone
+        ? { phone: { contains: phone } }
+        : { doctorId },
       orderBy: { createdAt: 'desc' },
       include: {
+        doctor: {
+          select: { id: true, name: true, email: true, hospital: true, phone: true },
+        },
         reports: {
           orderBy: { createdAt: 'desc' },
           take: 5

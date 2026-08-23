@@ -1,15 +1,18 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Download, Microscope, Eye, Brain, Heart, Bean,
-  AlertTriangle, CheckCircle, Image as ImageIcon, Loader2, Check, X, ZoomIn, GitCompare,
-  FileText, Upload,
+  AlertTriangle, CheckCircle, Image as ImageIcon, Check, X, ZoomIn, GitCompare,
+  FileText,
 } from 'lucide-react';
-import { ReportData } from '@/types/report';
+import { ReportData, DetailedAnalysisContext } from '@/types/report';
 import Button from '../Common/Button';
+import { Swirling } from '../ui/Swirling';
 import { saveReport, API_BASE_URL } from '@/services/api';
+import { getReportImageUrl } from '@/lib/reportImages';
 import { toast } from 'react-toastify';
 import ProgressRing from '@/components/ui/ProgressRing';
 import SeverityMeter from '@/components/ui/SeverityMeter';
@@ -26,6 +29,9 @@ interface ReportDisplayProps {
   patientId?: string;
   patientAge?: number | string;
   patientGender?: string;
+  /** Saved report's globally-unique sequence number (from the DB). Falls back to the
+   * backend-generated preview id when the report hasn't been saved yet. */
+  reportNumber?: number;
 }
 
 const GRADE_INDEX: Record<string, number> = {
@@ -34,13 +40,6 @@ const GRADE_INDEX: Record<string, number> = {
   'Moderate NPDR': 2,
   'Severe NPDR': 3,
   PDR: 4,
-};
-
-// Diagnostic follow-up tests suggested per organ risk factor, shown only when overall risk > 40%.
-const ORGAN_FOLLOW_UP_TESTS: Record<string, string[]> = {
-  'Cardiovascular Risk': ['Lipid Profile', 'ECG'],
-  'Kidney Disease Risk': ['RFT (Renal Function Test)', 'eGFR Level'],
-  'Cerebrovascular Risk': ['Carotid Doppler Ultrasound'],
 };
 
 // Per-organ heading metadata for the Report Interpretation section.
@@ -60,6 +59,7 @@ export default function ReportDisplay({
   patientId: propPatientId,
   patientAge: propPatientAge,
   patientGender: propPatientGender,
+  reportNumber,
 }: ReportDisplayProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
@@ -72,10 +72,8 @@ export default function ReportDisplay({
   const [patientAge, setPatientAge] = useState<number | string>(propPatientAge ?? '');
   const [patientGender, setPatientGender] = useState<string>(propPatientGender || '');
   const [showCompare, setShowCompare] = useState(false);
-  const [testDropdownOpen, setTestDropdownOpen] = useState(false);
-  const [pendingTestName, setPendingTestName] = useState('');
   const reportRef = useRef<HTMLDivElement>(null);
-  const testFileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -160,37 +158,32 @@ export default function ReportDisplay({
 
   const hasOrganInterpretation = ORGAN_SECTIONS.some((o) => !!report.organInterpretation?.[o.key]);
 
-  // Only surface follow-up test suggestions when overall risk exceeds 40%, tied to
-  // whichever organ risk factor is driving that risk.
-  const topRiskFactor = (report.riskFactors || []).reduce(
-    (max, f) => (f.level > (max?.level ?? -1) ? f : max),
-    undefined as (typeof report.riskFactors)[number] | undefined
-  );
-  const suggestedTests =
-    (report.overallRisk || 0) > 0.4 && topRiskFactor
-      ? ORGAN_FOLLOW_UP_TESTS[topRiskFactor.name] || []
-      : [];
+  // LLM-picked follow-up tests (0-2), only populated by the backend for DR grade
+  // Moderate NPDR and above, based on this specific patient's findings.
+  const suggestedTests = report.suggestedTests || [];
 
-  const handleTestUploadClick = (testName: string) => {
-    setPendingTestName(testName);
-    testFileInputRef.current?.click();
-  };
-
-  const handleTestFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      toast.success(`${pendingTestName}: "${file.name}" ready to upload.`, { position: 'top-right', autoClose: 4000 });
+  // Hands the current report + patient context to the Detailed Analysis page via
+  // sessionStorage (the report may still be an unsaved, just-generated result with no
+  // DB id yet, so it can't simply be re-fetched by id on the next page).
+  const handleOpenDetailedAnalysis = () => {
+    if (!patientId) {
+      toast.error('Select a patient before running a detailed analysis.', { position: 'top-right', autoClose: 4000 });
+      return;
     }
-    e.target.value = '';
-    setTestDropdownOpen(false);
+    const context: DetailedAnalysisContext = {
+      report,
+      patientId,
+      patientName: patientName || 'Patient',
+      patientAge,
+      patientGender,
+      suggestedTests,
+    };
+    sessionStorage.setItem('retinexus:detailedAnalysisContext', JSON.stringify(context));
+    router.push(`/dashboard/patients/${encodeURIComponent(patientId)}/detailed-analysis`);
   };
 
   const getImageUrl = (filename: string | undefined) => {
-    if (!filename || filename === 'Failed' || filename === 'None' || filename === 'null') {
-      return null;
-    }
-    const cleanFilename = filename.replace(/^.*[\\/]/, '');
-    return `${API_BASE_URL}/output_results/${cleanFilename}`;
+    return getReportImageUrl(filename, API_BASE_URL);
   };
 
   const imageLabels: Record<string, string> = {
@@ -273,11 +266,10 @@ export default function ReportDisplay({
     <>
       <div ref={reportRef} id="pdf-report-content" className="space-y-6 p-2">
         <ClinicalReportHeader
-          reportId={report.id}
+          reportId={reportNumber ? `RN-${String(reportNumber).padStart(6, '0')}` : report.id}
           patientName={patientName}
           patientAge={patientAge}
           patientGender={patientGender}
-          processedAt={report.processedAt}
         />
 
         {/* DR Grade + Severity + Confidence */}
@@ -306,6 +298,7 @@ export default function ReportDisplay({
               color="var(--brand-accent)"
               label={<span className="text-xl">{confidencePct.toFixed(0)}%</span>}
               sublabel="Confidence"
+              className="pdf-confidence-ring"
             />
           </div>
         </div>
@@ -319,6 +312,7 @@ export default function ReportDisplay({
               strokeWidth={7}
               color={riskPct >= 70 ? '#ef4444' : riskPct >= 40 ? '#f59e0b' : '#10b981'}
               label={<span className="text-sm font-bold">{riskPct.toFixed(0)}%</span>}
+              className="pdf-risk-ring"
             />
             <div>
               <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Overall Risk</p>
@@ -354,7 +348,7 @@ export default function ReportDisplay({
               <Brain className="w-5 h-5 text-[var(--brand-secondary)]" />
               Biomarker Dashboard
             </h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="pdf-biomarker-grid grid grid-cols-2 gap-4">
               {dashboardBiomarkers.map((biomarker, index) => (
                 <BiomarkerCard key={biomarker.name} biomarker={biomarker} index={index} />
               ))}
@@ -370,7 +364,7 @@ export default function ReportDisplay({
           </h3>
 
           {report.lesionCounts ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="pdf-lesion-grid grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
                 { label: 'Microaneurysms', value: report.lesionCounts.microaneurysms, color: '#ef4444' },
                 { label: 'Haemorrhages', value: report.lesionCounts.haemorrhages, color: '#f97316' },
@@ -382,7 +376,7 @@ export default function ReportDisplay({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.06 }}
-                  className="rounded-xl p-4 text-center border transition-all hover:shadow-md"
+                  className="lesion-stat-box rounded-xl p-4 text-center border transition-all hover:shadow-md"
                   style={{ borderColor: 'var(--border)' }}
                 >
                   <p className="text-2xl font-bold" style={{ color: l.color }}>{l.value || 0}</p>
@@ -398,9 +392,11 @@ export default function ReportDisplay({
           )}
         </div>
 
-        {/* Risk Factors — formal clinical assessment table */}
+        {/* Risk Factors — formal clinical assessment table (screen only; the PDF/download
+            export keeps the report compact by relying on the Report Interpretation narrative
+            instead of this raw table). */}
         {report.riskFactors && report.riskFactors.length > 0 && (
-          <div className="surface rounded-2xl p-6 clinical-section">
+          <div className="surface rounded-2xl p-6 clinical-section no-print">
             <h3 className="text-lg font-semibold mb-1 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
               <Heart className="w-5 h-5 text-rose-500" />
               Clinical Risk Factor Assessment
@@ -523,6 +519,36 @@ export default function ReportDisplay({
           </div>
         )}
 
+        {/* Recommended follow-up tests — names the tests the Detailed Analysis button
+            correlates against, both on screen and in the printed report. Always shown
+            (even with none suggested) so the report explicitly states that, rather than
+            silently omitting the section. */}
+        <div className="surface rounded-2xl p-6 clinical-section pdf-suggested-tests pdf-page2-start">
+          <h3 className="text-lg font-semibold mb-1 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
+            <Microscope className="w-5 h-5 text-[var(--brand-secondary)]" />
+            Recommended Follow-up Tests
+          </h3>
+          <p className="text-xs mb-4" style={{ color: 'var(--subtle-foreground)' }}>
+            Suggested for a Detailed Analysis based on this scan&apos;s findings
+          </p>
+          {suggestedTests.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {suggestedTests.map((t) => (
+                <span
+                  key={t}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border"
+                  style={{ background: 'var(--muted)', color: 'var(--foreground)', borderColor: 'var(--border)' }}
+                >
+                  <Microscope className="w-3 h-3 text-[var(--brand-secondary)]" />
+                  {t}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>No test recommended</p>
+          )}
+        </div>
+
         {/* Comparison slider — screen only, excluded from the printed/PDF report */}
         {enhancedUrl && gradcamUrl && (
           <div className="surface rounded-2xl p-6 no-print">
@@ -552,7 +578,7 @@ export default function ReportDisplay({
 
         {/* Output Images */}
         {report.images && Object.keys(report.images).length > 0 && (
-          <div className="surface rounded-2xl p-6">
+          <div className="pdf-images-page surface rounded-2xl p-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
               <ImageIcon className="w-5 h-5 text-[var(--brand-secondary)]" />
               Analysis Output Images
@@ -655,7 +681,7 @@ export default function ReportDisplay({
         <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
           <Button
             variant={isApproved ? 'success' : 'primary'}
-            icon={isApproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            icon={isApproving ? <Swirling className="w-4 h-4" style={{ color: 'var(--brand-secondary)' }} /> : <Check className="w-4 h-4" />}
             onClick={handleApprove}
             disabled={isApproving || isApproved || !patientId || !doctorId}
             className="min-w-[160px]"
@@ -666,7 +692,7 @@ export default function ReportDisplay({
 
           <Button
             variant="secondary"
-            icon={isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            icon={isDownloading ? <Swirling className="w-4 h-4" style={{ color: 'var(--brand-secondary)' }} /> : <Download className="w-4 h-4" />}
             onClick={handleDownloadPDF}
             disabled={isDownloading}
             className="min-w-[140px]"
@@ -674,51 +700,15 @@ export default function ReportDisplay({
             {isDownloading ? 'Generating...' : 'Download PDF'}
           </Button>
 
-          <div className="relative inline-block">
-            <Button
-              variant="secondary"
-              icon={<Microscope className="w-4 h-4" />}
-              className="min-w-[160px]"
-              disabled={suggestedTests.length === 0}
-              onClick={() => setTestDropdownOpen((v) => !v)}
-            >
-              Detailed Analysis
-            </Button>
-            <AnimatePresence>
-              {testDropdownOpen && suggestedTests.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute z-20 bottom-full mb-2 left-1/2 -translate-x-1/2 min-w-[240px] rounded-xl border shadow-lg overflow-hidden"
-                  style={{ borderColor: 'var(--border)', background: 'var(--card)' }}
-                >
-                  <p className="px-3.5 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'var(--subtle-foreground)' }}>
-                    Suggested Test{suggestedTests.length > 1 ? 's' : ''}
-                  </p>
-                  {suggestedTests.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => handleTestUploadClick(t)}
-                      className="w-full flex items-center gap-2 px-3.5 py-2.5 text-xs text-left hover:bg-[var(--muted)] transition-colors"
-                      style={{ color: 'var(--foreground)' }}
-                    >
-                      <Upload className="w-3.5 h-3.5 text-[var(--brand-secondary)] flex-shrink-0" />
-                      Upload {t}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <input
-              ref={testFileInputRef}
-              type="file"
-              className="hidden"
-              accept="image/*,.pdf"
-              onChange={handleTestFileSelected}
-            />
-          </div>
+          <Button
+            variant="secondary"
+            icon={<Microscope className="w-4 h-4" />}
+            className="min-w-[160px]"
+            disabled={suggestedTests.length === 0 || !patientId}
+            onClick={handleOpenDetailedAnalysis}
+          >
+            Detailed Analysis
+          </Button>
         </div>
       )}
     </>

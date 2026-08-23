@@ -17,7 +17,8 @@ export default function WhatIsDRPage() {
       <Nav />
       <PageHero
         eyebrow="Understanding the Condition"
-        title="What is diabetic retinopathy — and why does it matter this much?"
+        title="What is diabetic retinopathy and why does it matter this much?"
+        titleColor="var(--brand-secondary)"
         description="A single retinal photograph can reveal damage that took years of high blood sugar to build up. Here's the full picture: how big this problem is, why Pakistan is at its center, and what it does to the body over time."
       />
       <EyeJourney />

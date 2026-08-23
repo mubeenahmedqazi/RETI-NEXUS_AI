@@ -1,11 +1,15 @@
 import os
+import json
 import shutil
 import sys
 from datetime import datetime
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
+from src.ocr_extraction import extract_document_text, verify_patient_name_in_text, OCRUnavailableError
 
 # Add the current directory to path to ensure imports work
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -189,6 +193,123 @@ async def analyze_retina(file: UploadFile = File(...)):
         
         raise HTTPException(status_code=500, detail=f"Core Processing Fault: {str(e)}")
 
+
+class LongitudinalRequest(BaseModel):
+    visits: list[dict]
+    detailed_analyses: list[dict] = []
+
+
+@app.post("/longitudinal-analysis")
+async def longitudinal_analysis(payload: LongitudinalRequest):
+    """
+    Given a chronological (oldest-first) list of a single patient's compact visit
+    summaries (current scan + up to 3 previous) plus their prior Detailed Analyses,
+    asks the LLM for a trend narrative and advice synthesizing both — DR grade
+    progression, organ-risk trajectory, and what the Detailed Analyses confirm or add.
+    """
+    if pipeline_engine is None or pipeline_engine.report_generator is None:
+        raise HTTPException(status_code=503, detail="LLM report engine is offline. Check server initialization logs.")
+
+    if not payload.visits:
+        raise HTTPException(status_code=400, detail="At least the current visit is required.")
+
+    if len(payload.visits) < 2 and not payload.detailed_analyses:
+        raise HTTPException(
+            status_code=400,
+            detail="At least 2 visits, or at least 1 Detailed Analysis, are required for a longitudinal comparison.",
+        )
+
+    result = pipeline_engine.report_generator.generate_longitudinal_analysis(payload.visits, payload.detailed_analyses)
+    return JSONResponse(content=result)
+
+
+# Text forwarded to the LLM is capped so a long/noisy OCR result can't blow out the prompt.
+MAX_OCR_TEXT_CHARS = 6000
+DETAILED_ANALYSIS_ALLOWED_EXTENSIONS = ['.pdf', '.jpg', '.jpeg']
+
+
+@app.post("/detailed-test-analysis")
+async def detailed_test_analysis(
+    file: UploadFile = File(...),
+    test_name: str = Form(...),
+    patient_name: str = Form(...),
+    current_report: str = Form(...),
+    previous_reports: str = Form("[]"),
+):
+    """
+    Detailed Analysis flow: a doctor uploads a follow-up diagnostic test report (e.g. the
+    Lipid Profile/ECG/OCT suggested for this patient). The file is OCR'd, and the extracted
+    text is correlated by the LLM against the patient's current retinal screening findings
+    and recent visit history to produce a structured clinical analysis.
+    """
+    if pipeline_engine is None or pipeline_engine.report_generator is None:
+        raise HTTPException(status_code=503, detail="LLM report engine is offline. Check server initialization logs.")
+
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
+    file_ext = os.path.splitext(file.filename)[1].lower()
+    if file_ext not in DETAILED_ANALYSIS_ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type. Allowed: {', '.join(DETAILED_ANALYSIS_ALLOWED_EXTENSIONS)}"
+        )
+
+    try:
+        current_report_dict = json.loads(current_report)
+        previous_reports_list = json.loads(previous_reports)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="current_report / previous_reports must be valid JSON.")
+
+    file_bytes = await file.read()
+
+    try:
+        extraction = extract_document_text(file_bytes, file.filename)
+    except OCRUnavailableError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"[!] Document extraction failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to read the uploaded document: {e}")
+
+    extracted_text = extraction["text"][:MAX_OCR_TEXT_CHARS]
+    if not extracted_text.strip():
+        raise HTTPException(
+            status_code=422,
+            detail="No readable text could be extracted from this file. Try a clearer scan or a different file."
+        )
+
+    if not verify_patient_name_in_text(patient_name, extracted_text):
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"This document doesn't appear to belong to {patient_name} — their name wasn't found "
+                "in the extracted text. Please verify you uploaded the correct patient's test report."
+            ),
+        )
+
+    print(f"[+] Detailed Analysis: extracted {len(extracted_text)} chars via '{extraction['method']}' from '{test_name}' upload.")
+
+    result = pipeline_engine.report_generator.generate_detailed_test_analysis(
+        test_name=test_name,
+        extracted_text=extracted_text,
+        current_report=current_report_dict,
+        previous_reports=previous_reports_list,
+    )
+
+    # generate_detailed_test_analysis() never raises on a bad/failed LLM call — it falls
+    # back to an all-empty result instead, so the report would otherwise render as blank
+    # section headers with a 200 OK and no indication anything went wrong.
+    if not result.get("clinicalSummary") and not result.get("testFindings"):
+        raise HTTPException(
+            status_code=502,
+            detail="The AI analysis engine did not return a valid result. Please try again."
+        )
+
+    result["extractionMethod"] = extraction["method"]
+    return JSONResponse(content=result)
+
+
 class ReportTransformer:
     """
     Converts a raw pipeline report (from RetiNexusFullPipeline) into the JSON shape
@@ -241,6 +362,8 @@ class ReportTransformer:
                 "clinicalReport": self._clinical_report_text(),  # ✅ LLM clinical report (Roman Urdu)
                 "organInterpretation": self._organ_interpretation(),  # ✅ Per-organ plain-English summary
                 "interpretation": self._interpretation_paragraph(),  # legacy single-paragraph fallback
+                "predictedRisk": self._predicted_risk(),  # ✅ 1-year / 5-year outlook, grounded in the DR-grade clinical reference scale
+                "suggestedTests": self._suggested_tests(),  # ✅ LLM-picked follow-up tests (grade 2+)
             }
         except Exception as e:
             print(f"[!] Error transforming report: {e}")
@@ -359,6 +482,18 @@ class ReportTransformer:
             "kidney": organ.get("kidney", ""),
             "brain": organ.get("brain", ""),
         }
+
+    def _predicted_risk(self):
+        organ = self.report.get("organ_interpretation", {}) or {}
+        return {
+            "oneYear": organ.get("predictedRisk1Year", ""),
+            "fiveYear": organ.get("predictedRisk5Year", ""),
+        }
+
+    def _suggested_tests(self):
+        organ = self.report.get("organ_interpretation", {}) or {}
+        tests = organ.get("suggestedTests", [])
+        return tests if isinstance(tests, list) else []
 
     def _interpretation_paragraph(self):
         organ = self.report.get("organ_interpretation", {}) or {}

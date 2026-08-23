@@ -31,3 +31,8 @@ next-env.d.ts
 .env
 .env.local
 .env*.local
+
+# RetiNexus AI chat widget knowledge base — PDFs and the generated embedding
+# index are user-supplied and can be large; keep the folder structure only.
+retinexus_website/knowledge/pdfs/*.pdf
+retinexus_website/data/eye-knowledge-index.json

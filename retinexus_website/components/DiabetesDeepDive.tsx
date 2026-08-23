@@ -176,7 +176,7 @@ function DRStages() {
               />
               <div>
                 <p className="font-semibold" style={{ color: s.color }}>
-                  Stage {i + 1} — {s.name}
+                  Stage {i} — {s.name}
                 </p>
                 <p className="text-sm mt-1 leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
                   {s.desc}

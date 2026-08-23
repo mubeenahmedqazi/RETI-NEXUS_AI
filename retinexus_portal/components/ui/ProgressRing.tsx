@@ -29,7 +29,7 @@ export default function ProgressRing({
 
   return (
     <div className={className} style={{ width: size, height: size, position: 'relative' }}>
-      <svg width={size} height={size} className="-rotate-90">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
         <circle
           cx={size / 2}
           cy={size / 2}

@@ -11,10 +11,12 @@ interface PageHeroProps {
   backgroundImage?: string;
   /** Optional slow-motion looping video background (e.g. for How It Works) instead of a static photo. */
   backgroundVideo?: string;
+  /** Overrides the title color (defaults to --foreground). */
+  titleColor?: string;
 }
 
 /** Compact banner used at the top of standalone sub-pages (About, How It Works). */
-export default function PageHero({ title, description, backgroundImage, backgroundVideo }: PageHeroProps) {
+export default function PageHero({ title, description, backgroundImage, backgroundVideo, titleColor }: PageHeroProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -76,7 +78,7 @@ export default function PageHero({ title, description, backgroundImage, backgrou
           <div
             className={isImmersive ? 'rounded-3xl px-6 py-8 sm:px-10 sm:py-10 backdrop-blur-md bg-white/70 dark:bg-slate-950/60 border border-slate-200/80 dark:border-white/10 shadow-2xl' : ''}
           >
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-tight" style={{ color: 'var(--foreground)' }}>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-tight" style={{ color: titleColor || 'var(--foreground)' }}>
               {title}
             </h1>
             <p className="mt-4 text-lg max-w-2xl mx-auto leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>

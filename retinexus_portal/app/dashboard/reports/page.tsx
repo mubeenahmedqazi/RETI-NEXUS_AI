@@ -15,6 +15,7 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 
 interface SavedReport {
   id: string;
+  reportNumber: number;
   patientId: string;
   patientName: string;
   drGrade: string;
@@ -192,6 +193,7 @@ export default function ReportsPage() {
                   patientId={selectedReport.patientId}
                   patientAge={selectedReport.patient?.age}
                   patientGender={selectedReport.patient?.gender}
+                  reportNumber={selectedReport.reportNumber}
                 />
                 <div className="flex justify-center mt-8 pb-2">
                   <Button variant="outline" icon={<X className="w-4 h-4" />} onClick={closeReportModal} className="min-w-[140px]">

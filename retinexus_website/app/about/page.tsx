@@ -17,6 +17,7 @@ export default function AboutPage() {
       <PageHero
         eyebrow="About & Vision"
         title="A retinal photo, read for more than the eye."
+        titleColor="var(--brand-secondary)"
         description="Why we built a screening system that treats the retina as a window into whole-body vascular health."
         backgroundImage="/consultancy.png"
       />

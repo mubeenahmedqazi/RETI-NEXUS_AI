@@ -131,6 +131,7 @@ export default function PatientReports({ patient, onUploadClick }: PatientReport
                             patientId={patient.id}
                             patientAge={patient.age}
                             patientGender={patient.gender}
+                            reportNumber={report.reportNumber}
                           />
                           <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
                             <Button variant="secondary" size="sm" icon={<Download className="w-4 h-4" />} className="text-xs" onClick={() => window.print()}>Download Report</Button>
