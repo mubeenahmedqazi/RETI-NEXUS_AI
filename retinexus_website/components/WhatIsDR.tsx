@@ -31,7 +31,7 @@ export default function WhatIsDR() {
           <p className="mt-4 leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
             Diabetic retinopathy is damage to the blood vessels of the retina caused by consistently high blood
             sugar. Over time, those vessels weaken, leak fluid, or close off entirely, and the eye tries to grow
-            new, fragile vessels to compensate — the stage most likely to cause serious vision loss. It develops
+            new, fragile vessels to compensate: the stage most likely to cause serious vision loss. It develops
             gradually, in five recognized stages, almost always without pain and often without any noticeable
             change in vision until the damage is advanced.
           </p>
@@ -61,7 +61,7 @@ export default function WhatIsDR() {
               <Activity className="w-6 h-6 text-[var(--brand-secondary)] flex-shrink-0 mt-0.5" />
               <p className="leading-relaxed" style={{ color: 'var(--foreground)' }}>
                 Diabetes itself is one of the fastest-growing health challenges in the world, affecting hundreds
-                of millions of people — a number that keeps climbing every year. Left unmanaged, it doesn&apos;t
+                of millions of people, a number that keeps climbing every year. Left unmanaged, it doesn&apos;t
                 just threaten eyesight. The same high blood sugar that damages retinal vessels damages small
                 blood vessels everywhere else in the body, which is why diabetic retinopathy is so often an early,
                 visible signal of risk building up elsewhere.
@@ -86,7 +86,7 @@ export default function WhatIsDR() {
             href="/what-is-dr"
             className="hover-wobble group inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[var(--brand-secondary)] to-[var(--brand-accent)] shadow-lg shadow-cyan-500/20 transition-shadow duration-300 hover:shadow-xl hover:shadow-cyan-500/30"
           >
-            See the full picture — global impact, Pakistan &amp; your body
+            See the full picture: global impact, Pakistan &amp; your body
             <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
           </Link>
         </ScrollReveal>

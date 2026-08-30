@@ -4,7 +4,7 @@ import PageHero from '@/components/ui/PageHero';
 import LegalContent from '@/components/ui/LegalContent';
 import Footer from '@/components/Footer';
 
-export const metadata: Metadata = { title: 'Terms of Service — Retinexus AI' };
+export const metadata: Metadata = { title: 'Terms of Service | Retinexus AI' };
 
 export default function TermsPage() {
   return (
@@ -19,7 +19,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold" style={{ color: 'var(--foreground)' }}>What this is</h2>
           <p className="mt-2">
-            Retinexus AI is a final year project — a working demonstration of an AI-assisted diabetic
+            Retinexus AI is a final year project: a working demonstration of an AI-assisted diabetic
             retinopathy and multi-organ risk screening pipeline. It is <strong>not</strong> a certified medical
             device and has not been clinically validated for real-world diagnostic use.
           </p>

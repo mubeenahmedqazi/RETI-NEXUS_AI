@@ -2,8 +2,27 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ClipboardList, Eye, Loader2, Send, X } from 'lucide-react';
+import { ClipboardList, Eye, Loader2, Mic, MicOff, Send, Volume2, VolumeX, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+
+// Minimal shape for the non-standard Web Speech API (not in TS's default DOM lib) —
+// only the bits this component actually uses.
+interface SpeechRecognitionResultLike {
+  transcript: string;
+}
+interface SpeechRecognitionEventLike extends Event {
+  results: { [index: number]: { [index: number]: SpeechRecognitionResultLike; isFinal: boolean }; length: number };
+}
+interface SpeechRecognitionLike extends EventTarget {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start: () => void;
+  stop: () => void;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+}
 
 interface ChatTurn {
   role: 'user' | 'assistant';
@@ -27,9 +46,9 @@ const GREETING: ChatTurn = {
 };
 
 const PRIMERS: Record<Route, string> = {
-  eye_doctor: 'Great — ask me anything about diabetic retinopathy, eye health, or how RetiNexus works.',
+  eye_doctor: 'Great! Ask me anything about diabetic retinopathy, eye health, or how RetiNexus works.',
   report_sql:
-    "Sure — to pull up your report I'll need the patient's full name, the phone number on file, and the report ID. You can share them one at a time or all together.",
+    "Sure, to pull up your report I'll need the patient's full name, the phone number on file, and the report ID. You can share them one at a time or all together.",
 };
 
 const markdownComponents = {
@@ -75,6 +94,86 @@ export default function ChatWidget() {
     return id;
   });
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Voice input (speech-to-text) and voice output (text-to-speech) — both browser-native
+  // (Web Speech API), so no new dependency or backend work; each feature-detects itself
+  // and simply doesn't render its button on a browser that lacks support (mainly Safari
+  // for recognition) rather than erroring.
+  const [isListening, setIsListening] = useState(false);
+  const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
+  const [voiceSupported, setVoiceSupported] = useState({ recognition: false, synthesis: false });
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+
+  useEffect(() => {
+    const SpeechRecognitionCtor =
+      (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike })
+        .SpeechRecognition ||
+      (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionLike }).webkitSpeechRecognition;
+
+    setVoiceSupported({
+      recognition: Boolean(SpeechRecognitionCtor),
+      synthesis: typeof window !== 'undefined' && 'speechSynthesis' in window,
+    });
+
+    if (SpeechRecognitionCtor) {
+      const recognition = new SpeechRecognitionCtor();
+      recognition.lang = 'en-US';
+      recognition.interimResults = true;
+      recognition.continuous = false;
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        setInput(transcript);
+      };
+      recognition.onerror = () => setIsListening(false);
+      recognition.onend = () => setIsListening(false);
+      recognitionRef.current = recognition;
+    }
+
+    return () => {
+      recognitionRef.current?.stop();
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
+
+  const toggleListening = () => {
+    const recognition = recognitionRef.current;
+    if (!recognition) return;
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+    } else {
+      window.speechSynthesis?.cancel();
+      setSpeakingIndex(null);
+      setInput('');
+      recognition.start();
+      setIsListening(true);
+    }
+  };
+
+  const toggleSpeak = (index: number, text: string) => {
+    if (!window.speechSynthesis) return;
+    if (speakingIndex === index) {
+      window.speechSynthesis.cancel();
+      setSpeakingIndex(null);
+      return;
+    }
+    window.speechSynthesis.cancel();
+    // Markdown syntax read aloud verbatim (asterisks, bullets) sounds wrong — strip the
+    // common markers before handing the text to the speech engine.
+    const plainText = text
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/^[-*]\s+/gm, '')
+      .replace(/#+\s?/g, '');
+    const utterance = new SpeechSynthesisUtterance(plainText);
+    utterance.onend = () => setSpeakingIndex(null);
+    utterance.onerror = () => setSpeakingIndex(null);
+    setSpeakingIndex(index);
+    window.speechSynthesis.speak(utterance);
+  };
 
   // Peek-a-boo: the floating logo shows for a while, hides for 5s, then
   // reappears — repeating. Paused (always shown) while the chat is open.
@@ -245,7 +344,7 @@ export default function ChatWidget() {
               {messages.map((m, i) => (
                 <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div
-                    className="max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed"
+                    className="group relative max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed"
                     style={
                       m.role === 'user'
                         ? { background: 'var(--brand-secondary)', color: '#ffffff' }
@@ -254,7 +353,20 @@ export default function ChatWidget() {
                   >
                     {m.content ? (
                       m.role === 'assistant' ? (
-                        <ReactMarkdown components={markdownComponents}>{m.content}</ReactMarkdown>
+                        <>
+                          <ReactMarkdown components={markdownComponents}>{m.content}</ReactMarkdown>
+                          {voiceSupported.synthesis && !isStreaming && (
+                            <button
+                              onClick={() => toggleSpeak(i, m.content)}
+                              className="mt-1 inline-flex items-center gap-1 text-[11px] opacity-60 transition-opacity hover:opacity-100"
+                              style={{ color: 'var(--subtle-foreground)' }}
+                              aria-label={speakingIndex === i ? 'Stop reading aloud' : 'Read aloud'}
+                            >
+                              {speakingIndex === i ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}
+                              {speakingIndex === i ? 'Stop' : 'Listen'}
+                            </button>
+                          )}
+                        </>
                       ) : (
                         <span className="whitespace-pre-wrap">{m.content}</span>
                       )
@@ -276,7 +388,7 @@ export default function ChatWidget() {
                   >
                     <Eye className="h-4 w-4 flex-shrink-0 text-[var(--brand-secondary)]" />
                     <span>
-                      <span className="font-medium">Eye Doctor</span> — ask about DR &amp; eye health
+                      <span className="font-medium">Eye Doctor</span>: ask about DR &amp; eye health
                     </span>
                   </button>
                   <button
@@ -286,7 +398,7 @@ export default function ChatWidget() {
                   >
                     <ClipboardList className="h-4 w-4 flex-shrink-0 text-[var(--brand-secondary)]" />
                     <span>
-                      <span className="font-medium">Report Retrieval</span> — check a screening result
+                      <span className="font-medium">Report Retrieval</span>: check a screening result
                     </span>
                   </button>
                 </div>
@@ -305,12 +417,31 @@ export default function ChatWidget() {
                       send();
                     }
                   }}
-                  placeholder="Ask about DR, eye health, or your report..."
+                  placeholder={isListening ? 'Listening...' : 'Ask about DR, eye health, or your report...'}
                   rows={1}
                   disabled={isStreaming}
                   className="ring-focus flex-1 resize-none rounded-xl border bg-transparent px-3 py-2 text-sm outline-none"
                   style={{ borderColor: 'var(--border)', color: 'var(--foreground)' }}
                 />
+                {voiceSupported.recognition && (
+                  <button
+                    onClick={toggleListening}
+                    disabled={isStreaming}
+                    className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border transition-colors disabled:opacity-40"
+                    style={
+                      isListening
+                        ? { background: 'var(--brand-danger)', borderColor: 'var(--brand-danger)' }
+                        : { borderColor: 'var(--border)' }
+                    }
+                    aria-label={isListening ? 'Stop voice input' : 'Start voice input'}
+                  >
+                    {isListening ? (
+                      <MicOff className="h-4 w-4 text-white" />
+                    ) : (
+                      <Mic className="h-4 w-4" style={{ color: 'var(--subtle-foreground)' }} />
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={() => send()}
                   disabled={isStreaming || !input.trim()}

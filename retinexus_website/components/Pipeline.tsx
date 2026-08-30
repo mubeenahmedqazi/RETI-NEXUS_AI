@@ -9,19 +9,19 @@ const pipeline = [
     step: '01',
     icon: SlidersHorizontal,
     title: 'Quality Check & Preprocessing',
-    description: 'Blur, brightness and field-of-view are validated before anything else runs — a poor image is rejected here rather than producing an unreliable result downstream. Accepted images are then enhanced with CLAHE for consistent contrast across different cameras and lighting conditions.',
+    description: 'Blur, brightness and field-of-view are validated before anything else runs. A poor image is rejected here rather than producing an unreliable result downstream. Accepted images are then enhanced with CLAHE for consistent contrast across different cameras and lighting conditions.',
   },
   {
     step: '02',
     icon: Network,
     title: 'Vessel Segmentation',
-    description: 'A U-Net model trained on the DRIVE dataset traces the retinal vasculature pixel by pixel, producing a clean vessel map used to compute tortuosity, density and AV-ratio biomarkers — the same signals clinicians look for when assessing microvascular health.',
+    description: 'A U-Net model trained on the DRIVE dataset traces the retinal vasculature pixel by pixel, producing a clean vessel map used to compute tortuosity, density and AV-ratio biomarkers: the same signals clinicians look for when assessing microvascular health.',
   },
   {
     step: '03',
     icon: Crosshair,
     title: 'Lesion Detection',
-    description: 'A YOLOv8 detector scans the image for microaneurysms, haemorrhages and exudates, localizing each finding at the pixel level rather than just flagging the image as a whole — so the report can show exactly what was found and where.',
+    description: 'A YOLOv8 detector scans the image for microaneurysms, haemorrhages and exudates, localizing each finding at the pixel level rather than just flagging the image as a whole, so the report can show exactly what was found and where.',
   },
   {
     step: '04',
@@ -33,7 +33,7 @@ const pipeline = [
     step: '05',
     icon: GitMerge,
     title: 'Confirmatory Fusion & Longitudinal Tracking',
-    description: 'Every model’s output is fused into a single confidence-scored verdict rather than left as five disconnected numbers, and — once a doctor approves a scan — it’s added to that patient’s timeline so emerging trends are visible across visits, not just in one snapshot.',
+    description: 'Every model’s output is fused into a single confidence-scored verdict rather than left as five disconnected numbers, and once a doctor approves a scan, it’s added to that patient’s timeline so emerging trends are visible across visits, not just in one snapshot.',
   },
 ];
 
@@ -49,16 +49,16 @@ export default function Pipeline() {
             </h2>
             <p className="mt-4 leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
               Nothing here is a single black-box model. A raw fundus photograph passes through five purpose-built
-              stages — quality control, vessel mapping, lesion localization, disease grading, and risk fusion —
+              stages: quality control, vessel mapping, lesion localization, disease grading, and risk fusion,
               each one auditable on its own, before the final report is assembled.
             </p>
           </ScrollReveal>
 
           <ScrollReveal direction="right" className="relative lg:col-span-3">
             <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-[var(--brand-secondary)]/15 to-[var(--brand-accent)]/15 blur-2xl" />
-            <div className="relative rounded-3xl overflow-hidden border border-slate-200/80 dark:border-white/10 shadow-2xl">
+            <div className="relative overflow-hidden border border-slate-200/80 dark:border-white/10 shadow-2xl">
               <img
-                src="/process-image.jfif"
+                src="/process-image-optimized.webp"
                 alt="Retinal image moving through the Retinexus AI analysis pipeline"
                 className="w-full h-full object-cover aspect-[16/10]"
               />

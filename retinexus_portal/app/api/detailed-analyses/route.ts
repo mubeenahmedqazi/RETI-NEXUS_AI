@@ -78,6 +78,7 @@ export async function GET(req: NextRequest) {
     const cookieStore = await cookies()
     const token = cookieStore.get('auth_token')?.value
     const userId = cookieStore.get('user_id')?.value
+    const doctorId = cookieStore.get('doctor_id')?.value
 
     if (!token || !userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -85,15 +86,27 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const patientId = searchParams.get('patientId')
-    if (!patientId) {
-      return NextResponse.json({ error: 'patientId is required' }, { status: 400 })
+
+    // Scoped to one patient — used by the per-patient Detailed Analysis page's sidebar.
+    if (patientId) {
+      const analyses = await prisma.detailedAnalysis.findMany({
+        where: { patientId },
+        orderBy: { createdAt: 'desc' },
+      })
+      return NextResponse.json(analyses)
     }
 
+    // No patientId — the doctor-wide "Detailed Analysis" list page (sidebar nav item,
+    // separate from the "Screening Reports" list) — every analysis this doctor has saved.
+    const docId = doctorId || userId
     const analyses = await prisma.detailedAnalysis.findMany({
-      where: { patientId },
+      where: { doctorId: docId },
       orderBy: { createdAt: 'desc' },
+      // reportData is included so the list page's Download button can reproduce the exact
+      // same PDF as the live analysis flow (biomarkers, lesion counts, images, predicted
+      // risk) — none of that lives on the DetailedAnalysis row itself.
+      include: { patient: true, report: { select: { reportNumber: true, reportData: true } } },
     })
-
     return NextResponse.json(analyses)
   } catch (error) {
     console.error('Error fetching detailed analyses:', error)

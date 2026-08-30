@@ -32,6 +32,14 @@ interface ReportDisplayProps {
   /** Saved report's globally-unique sequence number (from the DB). Falls back to the
    * backend-generated preview id when the report hasn't been saved yet. */
   reportNumber?: number;
+  /** Shows just the Download PDF button even when hideActions hides Approve/Detailed
+   * Analysis — for read-only report-list views where re-approving or re-running a
+   * Detailed Analysis on an already-saved report doesn't make sense. */
+  showDownloadOnly?: boolean;
+  /** Fires the PDF print flow automatically once the report is rendered — lets a
+   * "Download" button elsewhere (e.g. a report list card) mount this component and get
+   * the print dialog without the user having to click a second Download button here. */
+  autoDownload?: boolean;
 }
 
 const GRADE_INDEX: Record<string, number> = {
@@ -60,6 +68,8 @@ export default function ReportDisplay({
   patientAge: propPatientAge,
   patientGender: propPatientGender,
   reportNumber,
+  showDownloadOnly = false,
+  autoDownload = false,
 }: ReportDisplayProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
@@ -203,6 +213,15 @@ export default function ReportDisplay({
       setIsDownloading(false);
     }
   };
+
+  useEffect(() => {
+    if (!autoDownload) return;
+    // Small delay so the report content (and its images) actually paint before the
+    // browser's print dialog opens, rather than firing the instant this mounts.
+    const timer = setTimeout(() => handleDownloadPDF(), 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoDownload]);
 
   const handleApprove = async () => {
     if (isApproved) {
@@ -519,118 +538,124 @@ export default function ReportDisplay({
           </div>
         )}
 
-        {/* Recommended follow-up tests — names the tests the Detailed Analysis button
-            correlates against, both on screen and in the printed report. Always shown
-            (even with none suggested) so the report explicitly states that, rather than
-            silently omitting the section. */}
-        <div className="surface rounded-2xl p-6 clinical-section pdf-suggested-tests pdf-page2-start">
-          <h3 className="text-lg font-semibold mb-1 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
-            <Microscope className="w-5 h-5 text-[var(--brand-secondary)]" />
-            Recommended Follow-up Tests
-          </h3>
-          <p className="text-xs mb-4" style={{ color: 'var(--subtle-foreground)' }}>
-            Suggested for a Detailed Analysis based on this scan&apos;s findings
-          </p>
-          {suggestedTests.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {suggestedTests.map((t) => (
-                <span
-                  key={t}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border"
-                  style={{ background: 'var(--muted)', color: 'var(--foreground)', borderColor: 'var(--border)' }}
-                >
-                  <Microscope className="w-3 h-3 text-[var(--brand-secondary)]" />
-                  {t}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>No test recommended</p>
-          )}
-        </div>
-
-        {/* Comparison slider — screen only, excluded from the printed/PDF report */}
-        {enhancedUrl && gradcamUrl && (
-          <div className="surface rounded-2xl p-6 no-print">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
-                <GitCompare className="w-5 h-5 text-[var(--brand-secondary)]" />
-                Original vs Grad-CAM Overlay
-              </h3>
-              <button
-                onClick={() => setShowCompare(!showCompare)}
-                className="text-xs text-[var(--brand-secondary)] hover:underline"
-              >
-                {showCompare ? 'Hide' : 'Show'} comparison
-              </button>
-            </div>
-            <AnimatePresence>
-              {showCompare && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-                  <div className="max-w-md mx-auto compare-slider-wrap">
-                    <CompareSlider beforeSrc={enhancedUrl} afterSrc={gradcamUrl} beforeLabel="Original" afterLabel="Grad-CAM" />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        )}
-
-        {/* Output Images */}
-        {report.images && Object.keys(report.images).length > 0 && (
-          <div className="pdf-images-page surface rounded-2xl p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
-              <ImageIcon className="w-5 h-5 text-[var(--brand-secondary)]" />
-              Analysis Output Images
+        {/* Tests + Images kept together (pdf-tests-images-group, see globals.css) so print
+            pagination only pushes them to a fresh page when page 1 genuinely has no room
+            left for them — not unconditionally, which used to leave a near-empty page 2
+            for short reports (e.g. grade 0, "No test recommended"). */}
+        <div className="pdf-tests-images-group">
+          {/* Recommended follow-up tests — names the tests the Detailed Analysis button
+              correlates against, both on screen and in the printed report. Always shown
+              (even with none suggested) so the report explicitly states that, rather than
+              silently omitting the section. */}
+          <div className="surface rounded-2xl p-6 clinical-section pdf-suggested-tests">
+            <h3 className="text-lg font-semibold mb-1 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
+              <Microscope className="w-5 h-5 text-[var(--brand-secondary)]" />
+              Recommended Follow-up Tests
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 image-output-grid">
-              {Object.entries(report.images).map(([key, filename]) => {
-                const imageUrl = getImageUrl(filename as string);
-
-                if (!imageUrl) {
-                  return (
-                    <div key={key} className="p-4 rounded-xl border text-center" style={{ borderColor: 'var(--border)', background: 'var(--muted)' }}>
-                      <ImageIcon className="w-6 h-6 mx-auto mb-2" style={{ color: 'var(--subtle-foreground)' }} />
-                      <p className="text-xs" style={{ color: 'var(--subtle-foreground)' }}>{imageLabels[key] || key}</p>
-                      <p className="text-xs text-red-500 mt-1">Not available</p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <motion.div
-                    key={key}
-                    className="rounded-xl overflow-hidden border group cursor-pointer"
-                    style={{ borderColor: 'var(--border)' }}
-                    whileHover={{ scale: 1.02 }}
-                    transition={{ duration: 0.3 }}
-                    onClick={() => openImagePopup(imageUrl, imageLabels[key] || key)}
+            <p className="text-xs mb-4" style={{ color: 'var(--subtle-foreground)' }}>
+              Suggested for a Detailed Analysis based on this scan&apos;s findings
+            </p>
+            {suggestedTests.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {suggestedTests.map((t) => (
+                  <span
+                    key={t}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border"
+                    style={{ background: 'var(--muted)', color: 'var(--foreground)', borderColor: 'var(--border)' }}
                   >
-                    <div className="relative">
-                      <img
-                        src={imageUrl}
-                        alt={imageLabels[key] || key}
-                        className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-300"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-start justify-end p-2 no-print">
-                        <ZoomIn className="w-4 h-4 text-white/0 group-hover:text-white/90 transition-colors duration-300" />
-                      </div>
-                    </div>
-                    {/* Always-visible caption — required for both screen and print/PDF output */}
-                    <div className="px-3 py-2 border-t text-center" style={{ borderColor: 'var(--border)', background: 'var(--muted)' }}>
-                      <p className="text-xs font-semibold" style={{ color: 'var(--foreground)' }}>
-                        {imageLabels[key] || key.replace('_', ' ')}
-                      </p>
+                    <Microscope className="w-3 h-3 text-[var(--brand-secondary)]" />
+                    {t}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>No test recommended</p>
+            )}
+          </div>
+
+          {/* Comparison slider — screen only, excluded from the printed/PDF report */}
+          {enhancedUrl && gradcamUrl && (
+            <div className="surface rounded-2xl p-6 no-print">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
+                  <GitCompare className="w-5 h-5 text-[var(--brand-secondary)]" />
+                  Original vs Grad-CAM Overlay
+                </h3>
+                <button
+                  onClick={() => setShowCompare(!showCompare)}
+                  className="text-xs text-[var(--brand-secondary)] hover:underline"
+                >
+                  {showCompare ? 'Hide' : 'Show'} comparison
+                </button>
+              </div>
+              <AnimatePresence>
+                {showCompare && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+                    <div className="max-w-md mx-auto compare-slider-wrap">
+                      <CompareSlider beforeSrc={enhancedUrl} afterSrc={gradcamUrl} beforeLabel="Original" afterLabel="Grad-CAM" />
                     </div>
                   </motion.div>
-                );
-              })}
+                )}
+              </AnimatePresence>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Output Images */}
+          {report.images && Object.keys(report.images).length > 0 && (
+            <div className="pdf-images-page surface rounded-2xl p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
+                <ImageIcon className="w-5 h-5 text-[var(--brand-secondary)]" />
+                Analysis Output Images
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 image-output-grid">
+                {Object.entries(report.images).map(([key, filename]) => {
+                  const imageUrl = getImageUrl(filename as string);
+
+                  if (!imageUrl) {
+                    return (
+                      <div key={key} className="p-4 rounded-xl border text-center" style={{ borderColor: 'var(--border)', background: 'var(--muted)' }}>
+                        <ImageIcon className="w-6 h-6 mx-auto mb-2" style={{ color: 'var(--subtle-foreground)' }} />
+                        <p className="text-xs" style={{ color: 'var(--subtle-foreground)' }}>{imageLabels[key] || key}</p>
+                        <p className="text-xs text-red-500 mt-1">Not available</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <motion.div
+                      key={key}
+                      className="rounded-xl overflow-hidden border group cursor-pointer"
+                      style={{ borderColor: 'var(--border)' }}
+                      whileHover={{ scale: 1.02 }}
+                      transition={{ duration: 0.3 }}
+                      onClick={() => openImagePopup(imageUrl, imageLabels[key] || key)}
+                    >
+                      <div className="relative">
+                        <img
+                          src={imageUrl}
+                          alt={imageLabels[key] || key}
+                          className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-300"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-start justify-end p-2 no-print">
+                          <ZoomIn className="w-4 h-4 text-white/0 group-hover:text-white/90 transition-colors duration-300" />
+                        </div>
+                      </div>
+                      {/* Always-visible caption — required for both screen and print/PDF output */}
+                      <div className="px-3 py-2 border-t text-center" style={{ borderColor: 'var(--border)', background: 'var(--muted)' }}>
+                        <p className="text-xs font-semibold" style={{ color: 'var(--foreground)' }}>
+                          {imageLabels[key] || key.replace('_', ' ')}
+                        </p>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Print-only formal footer — appears once, at the end of the document (last page) */}
         <div className="hidden print:block report-print-footer text-center pt-4 mt-2 border-t" style={{ borderColor: 'var(--border)' }}>
@@ -677,18 +702,20 @@ export default function ReportDisplay({
       </AnimatePresence>
 
       {/* Actions */}
-      {!hideActions && (
+      {(!hideActions || showDownloadOnly) && (
         <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
-          <Button
-            variant={isApproved ? 'success' : 'primary'}
-            icon={isApproving ? <Swirling className="w-4 h-4" style={{ color: 'var(--brand-secondary)' }} /> : <Check className="w-4 h-4" />}
-            onClick={handleApprove}
-            disabled={isApproving || isApproved || !patientId || !doctorId}
-            className="min-w-[160px]"
-            glow={!isApproved}
-          >
-            {isApproving ? 'Saving...' : isApproved ? 'Approved' : 'Approve Report'}
-          </Button>
+          {!hideActions && (
+            <Button
+              variant={isApproved ? 'success' : 'primary'}
+              icon={isApproving ? <Swirling className="w-4 h-4" style={{ color: 'var(--brand-secondary)' }} /> : <Check className="w-4 h-4" />}
+              onClick={handleApprove}
+              disabled={isApproving || isApproved || !patientId || !doctorId}
+              className="min-w-[160px]"
+              glow={!isApproved}
+            >
+              {isApproving ? 'Saving...' : isApproved ? 'Approved' : 'Approve Report'}
+            </Button>
+          )}
 
           <Button
             variant="secondary"
@@ -700,15 +727,17 @@ export default function ReportDisplay({
             {isDownloading ? 'Generating...' : 'Download PDF'}
           </Button>
 
-          <Button
-            variant="secondary"
-            icon={<Microscope className="w-4 h-4" />}
-            className="min-w-[160px]"
-            disabled={suggestedTests.length === 0 || !patientId}
-            onClick={handleOpenDetailedAnalysis}
-          >
-            Detailed Analysis
-          </Button>
+          {!hideActions && (
+            <Button
+              variant="secondary"
+              icon={<Microscope className="w-4 h-4" />}
+              className="min-w-[160px]"
+              disabled={suggestedTests.length === 0 || !patientId}
+              onClick={handleOpenDetailedAnalysis}
+            >
+              Detailed Analysis
+            </Button>
+          )}
         </div>
       )}
     </>

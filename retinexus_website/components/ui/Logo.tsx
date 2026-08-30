@@ -92,7 +92,7 @@ export default function Logo({
 
             <g clipPath={`url(#${id('eyeClip')})`}>
               <image
-                href="/logo.png"
+                href="/logo-optimized.png"
                 x="0"
                 y="159"
                 width="1000"

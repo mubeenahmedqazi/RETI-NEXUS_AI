@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -14,12 +14,28 @@ import { analyzeImage } from '@/services/api';
 import PageHeader from '@/components/ui/PageHeader';
 
 export default function UploadPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const hasPatientContext = Boolean(searchParams.get('patientId'));
   const [isLoading, setIsLoading] = useState(false);
   const [report, setReport] = useState<ReportData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
+  // This page only makes sense reached from a patient's own flow (which supplies
+  // patientId/patientName), never as a direct/bookmarked URL — redirect back to the
+  // patient list rather than showing an upload form with nothing to attach it to.
+  useEffect(() => {
+    if (!hasPatientContext) {
+      toast.info('Select a patient first to start a new scan.');
+      router.replace('/dashboard/patients');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasPatientContext]);
+
+  if (!hasPatientContext) {
+    return null;
+  }
 
   const handleUpload = async (file: File) => {
     try {

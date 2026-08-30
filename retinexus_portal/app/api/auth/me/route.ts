@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
           phone: true,
           specialization: true,
           isActive: true,
+          status: true,
           createdAt: true,
           updatedAt: true,
         }
@@ -69,6 +70,20 @@ export async function GET(request: NextRequest) {
 
       if (!doctor) {
         return invalidSession({ error: 'Doctor not found' }, 404);
+      }
+
+      // Re-checked on every call (not just at login) so a block takes effect within one
+      // request cycle instead of only at next sign-in.
+      if (doctor.status !== 'APPROVED') {
+        return invalidSession(
+          {
+            error:
+              doctor.status === 'PENDING'
+                ? 'Your account is pending admin approval.'
+                : 'Your account has been blocked. Please contact support.',
+          },
+          403
+        );
       }
 
       return NextResponse.json({

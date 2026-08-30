@@ -4,7 +4,7 @@ import PageHero from '@/components/ui/PageHero';
 import LegalContent from '@/components/ui/LegalContent';
 import Footer from '@/components/Footer';
 
-export const metadata: Metadata = { title: 'Cookies Policy — Retinexus AI' };
+export const metadata: Metadata = { title: 'Cookies Policy | Retinexus AI' };
 
 export default function CookiesPage() {
   return (
@@ -35,7 +35,7 @@ export default function CookiesPage() {
         <section>
           <h2 className="text-lg font-semibold" style={{ color: 'var(--foreground)' }}>Nothing else</h2>
           <p className="mt-2">
-            No analytics, no advertising, no third-party tracking — anywhere in this project.
+            No analytics, no advertising, no third-party tracking anywhere in this project.
           </p>
         </section>
       </LegalContent>

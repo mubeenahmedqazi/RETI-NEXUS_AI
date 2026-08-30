@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Calendar, Clock, User, Search, X } from 'lucide-react';
+import { FileText, Calendar, Clock, User, Search, X, Eye, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { getReports } from '@/services/api';
 import { ReportData } from '@/types/report';
@@ -40,6 +40,9 @@ export default function ReportsPage() {
   const [search, setSearch] = useState('');
   const [selectedReport, setSelectedReport] = useState<SavedReport | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // True only when the modal was opened via the card's Download button, so ReportDisplay
+  // knows to fire the print flow automatically instead of just sitting open for viewing.
+  const [autoDownload, setAutoDownload] = useState(false);
 
   useEffect(() => {
     loadReports();
@@ -63,8 +66,9 @@ export default function ReportsPage() {
       report.patientId?.includes(search)
   );
 
-  const openReportModal = (report: SavedReport) => {
+  const openReportModal = (report: SavedReport, download = false) => {
     setSelectedReport(report);
+    setAutoDownload(download);
     setIsModalOpen(true);
     document.body.style.overflow = 'hidden';
   };
@@ -72,6 +76,7 @@ export default function ReportsPage() {
   const closeReportModal = () => {
     setIsModalOpen(false);
     setSelectedReport(null);
+    setAutoDownload(false);
     document.body.style.overflow = 'auto';
   };
 
@@ -85,7 +90,7 @@ export default function ReportsPage() {
       <div className="space-y-6">
         <PageHeader
           eyebrow="Clinical Records"
-          title="Saved Reports"
+          title="Screening Reports"
           description="View all approved patient screening reports"
           actions={<Badge tone="accent">{reports.length} Reports</Badge>}
         />
@@ -117,8 +122,7 @@ export default function ReportsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 whileHover={{ y: -2 }}
-                className="surface rounded-2xl p-6 hover:shadow-lg transition-all duration-300 cursor-pointer group"
-                onClick={() => openReportModal(report)}
+                className="surface rounded-2xl p-6 hover:shadow-lg transition-all duration-300 group"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2 flex-1 min-w-0">
@@ -138,10 +142,29 @@ export default function ReportsPage() {
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                       <Badge tone={gradeToTone(report.drGrade)}>{report.drGrade || 'N/A'}</Badge>
-                      <span className="text-sm" style={{ color: 'var(--subtle-foreground)' }}>
-                        Confidence: {((report.confidence || 0) * 100).toFixed(1)}%
-                      </span>
+                      <Badge tone="neutral">RN-{String(report.reportNumber).padStart(6, '0')}</Badge>
                     </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<Eye className="w-4 h-4" />}
+                      onClick={() => openReportModal(report)}
+                      className="min-w-[100px]"
+                    >
+                      View
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<Download className="w-4 h-4" />}
+                      onClick={() => openReportModal(report, true)}
+                      className="min-w-[100px]"
+                    >
+                      Download
+                    </Button>
                   </div>
                 </div>
               </motion.div>
@@ -189,6 +212,7 @@ export default function ReportsPage() {
                   report={selectedReport.reportData}
                   onReset={closeReportModal}
                   hideActions={true}
+                  autoDownload={autoDownload}
                   patientName={selectedReport.patient?.name || selectedReport.patientName}
                   patientId={selectedReport.patientId}
                   patientAge={selectedReport.patient?.age}

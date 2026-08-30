@@ -28,14 +28,14 @@ export default function About() {
               The retina is the only place the body lets you see its blood vessels directly.
             </h2>
             <p className="mt-4 leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
-              Diabetes doesn&apos;t just damage the eye — it damages small blood vessels everywhere, including the
+              Diabetes doesn&apos;t just damage the eye. It damages small blood vessels everywhere, including the
               heart and kidneys. Because retinal microvasculature is directly visible through a simple fundus
               photograph, it acts as a non-invasive window into that same systemic vascular damage.
             </p>
             <p className="mt-4 leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
               Retinexus AI is built on that idea: instead of requiring expensive, invasive baseline cardiac or
               renal work-ups, a single retinal scan can surface early diabetic retinopathy findings alongside
-              early-warning signals for cardiovascular and kidney risk — putting a meaningful first screen within
+              early-warning signals for cardiovascular and kidney risk, putting a meaningful first screen within
               reach of any clinic with a fundus camera.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
@@ -53,9 +53,9 @@ export default function About() {
 
           <ScrollReveal direction="right" className="relative">
             <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-[var(--brand-secondary)]/15 to-[var(--brand-accent)]/15 blur-2xl" />
-            <div className="relative rounded-3xl overflow-hidden border border-slate-200/80 dark:border-white/10 shadow-2xl">
+            <div className="relative overflow-hidden border border-slate-200/80 dark:border-white/10 shadow-2xl">
               <img
-                src="/camera-image.jfif"
+                src="/camera-image-optimized.webp"
                 alt="Fundus camera used to capture retinal photographs for screening"
                 className="w-full h-full object-cover aspect-[4/5]"
               />
@@ -101,7 +101,7 @@ export default function About() {
               Why we started with the eye
             </h2>
             <p className="mt-4 leading-relaxed max-w-2xl mx-auto" style={{ color: 'var(--muted-foreground)' }}>
-              Most screening tools ask a patient to give something up — blood, time, money, or a trip to a
+              Most screening tools ask a patient to give something up: blood, time, money, or a trip to a
               specialist clinic. A fundus photograph asks for none of that. It takes seconds, it&apos;s painless,
               and the same image a doctor uses to check for diabetic retinopathy already contains the vascular
               detail an AI model needs to flag broader systemic risk. We built Retinexus AI to make that second

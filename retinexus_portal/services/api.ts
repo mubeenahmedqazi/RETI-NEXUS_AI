@@ -115,6 +115,22 @@ export const getReports = async () => {
   }
 };
 
+// ✅ Get every saved Detailed Analysis for the authenticated doctor (across all patients) —
+// the sidebar's separate "Detailed Analysis" list, distinct from screening Reports above.
+export const getAllDetailedAnalyses = async () => {
+  try {
+    const response = await fetch('/api/detailed-analyses', {
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch detailed analyses');
+    }
+    return await response.json();
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : 'Failed to fetch detailed analyses');
+  }
+};
+
 // ✅ Get all patients for the authenticated doctor. Pass `phone` to also search
 // beyond this doctor's own patients — for finding a patient by phone number
 // who was self-registered or registered by a different doctor.
@@ -153,6 +169,60 @@ export const generateLongitudinalAnalysis = async (
       `${API_BASE_URL}/longitudinal-analysis`,
       { visits, detailed_analyses: detailedAnalyses },
       { headers: { 'Content-Type': 'application/json' }, timeout: 60000 }
+    );
+    return response.data;
+  } catch (error) {
+    const axiosError = error as AxiosError<{ detail?: string }>;
+    throw new Error(axiosError.response?.data?.detail || axiosError.message);
+  }
+};
+
+// ✅ Patient Longitudinal History (CrewAI pipeline, retinexus_backend/patient_longitudinal_history)
+// Step 1: resolve a phone number to the patient account(s) it matches.
+export interface MatchedPatient {
+  id: string;
+  name: string;
+  phone: string;
+  age: number | null;
+  gender: string | null;
+}
+
+export const findPatientsByPhone = async (phoneNumber: string): Promise<MatchedPatient[]> => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/longitudinal-history/patients`,
+      { phone_number: phoneNumber },
+      { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
+    );
+    return response.data.patients;
+  } catch (error) {
+    const axiosError = error as AxiosError<{ detail?: string }>;
+    throw new Error(axiosError.response?.data?.detail || axiosError.message);
+  }
+};
+
+// Step 2: runs the CrewAI multi-agent pipeline against the selected patient's last (up
+// to) 3 reports — three sequential LLM calls, plus automatic retry-with-backoff if
+// Groq's per-minute rate limit is hit, so this can take a few minutes in the worst case.
+export interface LongitudinalInsights {
+  patient_phone: string;
+  report_count: number;
+  summary: string;
+  trajectory_insights: string[];
+  progression_risks: string[];
+  biomarker_changes: string[];
+  disclaimer: string;
+}
+
+export const runLongitudinalHistoryAnalysis = async (
+  phoneNumber: string,
+  patientId?: string
+): Promise<LongitudinalInsights> => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/longitudinal-history/analyze`,
+      { phone_number: phoneNumber, patient_id: patientId },
+      { headers: { 'Content-Type': 'application/json' }, timeout: 290000 }
     );
     return response.data;
   } catch (error) {

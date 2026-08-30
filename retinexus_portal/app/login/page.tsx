@@ -1,21 +1,48 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { signInWithEmailAndPassword, signInWithPopup, AuthError } from 'firebase/auth';
 import { Eye, EyeOff, Mail, Lock, LogIn, User, Stethoscope, UserCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import AuthShell from '@/components/Common/AuthShell';
 import { FormField } from '@/components/ui/FormField';
 import Button from '@/components/Common/Button';
+import GoogleIcon from '@/components/ui/GoogleIcon';
 import PatientProfilePicker, { PatientProfile } from '@/components/Patient/PatientProfilePicker';
 import { isValidPhone } from '@/lib/utils';
+import { auth, googleProvider } from '@/lib/firebase';
+
+const FIREBASE_ERROR_MESSAGES: Record<string, string> = {
+  'auth/wrong-password': 'Incorrect password.',
+  'auth/invalid-credential': "Incorrect email or password. If you signed up with Google, use ‘Continue with Google’ instead — that account has no password set.",
+  'auth/user-not-found': 'No account found with that email.',
+  'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.',
+  'auth/popup-closed-by-user': 'Sign-in was cancelled.',
+  'auth/configuration-not-found':
+    'Email/Password sign-in is not enabled for this project yet — enable it in the Firebase Console under Authentication → Sign-in method.',
+  'auth/operation-not-allowed':
+    'This sign-in method is not enabled for this project yet — enable it in the Firebase Console under Authentication → Sign-in method.',
+};
+
+function friendlyFirebaseError(err: unknown): string {
+  const code = (err as AuthError)?.code;
+  if (process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line no-console
+    console.error('Firebase auth error:', code, err);
+  }
+  return (code && FIREBASE_ERROR_MESSAGES[code]) || `Something went wrong${code ? ` (${code})` : ''}. Please try again.`;
+}
 
 type PatientStep = 'phone' | 'picker' | 'password';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [role, setRole] = useState<'doctor' | 'patient'>('doctor');
+  const searchParams = useSearchParams();
+  // The website's "Patient Login" link sends ?role=patient so visitors land on the right
+  // tab directly, instead of always defaulting to Doctor.
+  const [role, setRole] = useState<'doctor' | 'patient'>(() => (searchParams.get('role') === 'patient' ? 'patient' : 'doctor'));
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -49,26 +76,46 @@ export default function LoginPage() {
     router.refresh();
   };
 
-  // === DOCTOR: single-step submit ===
+  // === DOCTOR: email/password via Firebase, then exchange the ID token for a session ===
+  const exchangeFirebaseSession = async (idToken: string) => {
+    const response = await fetch('/api/auth/firebase', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+      credentials: 'include',
+    });
+    const data = await response.json();
+    if (response.ok) {
+      finishLogin(data);
+    } else {
+      setError(data.error || 'Invalid credentials');
+    }
+  };
+
   const handleDoctorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, role: 'doctor' }),
-        credentials: 'include',
-      });
-      const data = await response.json();
-      if (response.ok) {
-        finishLogin(data);
-      } else {
-        setError(data.error || 'Invalid credentials');
-      }
-    } catch {
-      setError('Something went wrong. Please try again.');
+      const credential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const idToken = await credential.user.getIdToken();
+      await exchangeFirebaseSession(idToken);
+    } catch (err) {
+      setError(friendlyFirebaseError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const credential = await signInWithPopup(auth, googleProvider);
+      const idToken = await credential.user.getIdToken();
+      await exchangeFirebaseSession(idToken);
+    } catch (err) {
+      setError(friendlyFirebaseError(err));
     } finally {
       setLoading(false);
     }
@@ -217,6 +264,23 @@ export default function LoginPage() {
 
           <Button type="submit" variant="primary" fullWidth loading={loading} icon={<LogIn className="w-4 h-4" />} glow>
             Sign In as Doctor
+          </Button>
+
+          <div className="flex items-center gap-3 py-1">
+            <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+            <span className="text-xs" style={{ color: 'var(--subtle-foreground)' }}>OR</span>
+            <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+          </div>
+
+          <Button
+            type="button"
+            variant="secondary"
+            fullWidth
+            loading={loading}
+            icon={<GoogleIcon />}
+            onClick={handleGoogleSignIn}
+          >
+            Continue with Google
           </Button>
         </form>
       ) : (

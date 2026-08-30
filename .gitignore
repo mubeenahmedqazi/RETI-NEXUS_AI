@@ -1,8 +1,29 @@
+# Python virtual environments (Root & Subdirectories)
+**/.venv*/
+.venv/
+venv/
+ENV/
+env/
+
+# Python caching & compiled binaries
+__pycache__/
+backend/src/__pycache__/
+*.pyc
+*.pyd
+*.so
+
 # Ignore deep learning weights and models
 backend/trained_weights/
 *.pth
 *.pt
 *.h5
+*.onnx
+
+# Vector / Database storage & local indexes
+chromadb/
+lancedb/
+*.db
+*.sqlite3
 
 # Ignore output images and visualizations
 backend/output_results/
@@ -10,15 +31,6 @@ backend/output_results/
 *.jpg
 *.jpeg
 
-# Python caching
-__pycache__/
-backend/src/__pycache__/
-*.pyc
-
-# Local environments (if you add them later)
-.venv/
-venv/
-env/
 # Node / Next.js
 node_modules/
 .next/

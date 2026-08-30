@@ -9,9 +9,9 @@ const frameSrc = (i: number) => `/eye-sequence/frame-${String(i).padStart(3, '0'
 
 const CAPTIONS = [
   { from: 0, to: 0.18, eyebrow: 'Inside the eye', title: 'A single retinal photograph holds the whole story.' },
-  { from: 0.22, to: 0.44, eyebrow: 'Layer by layer', title: 'The retina sits at the very back of the eye — where blood vessels are easiest to examine, and earliest to show damage.' },
+  { from: 0.22, to: 0.44, eyebrow: 'Layer by layer', title: 'The retina sits at the very back of the eye, where blood vessels are easiest to examine and earliest to show damage.' },
   { from: 0.48, to: 0.7, eyebrow: 'Through the iris', title: 'Diabetes silently weakens these vessels years before any symptoms appear.' },
-  { from: 0.74, to: 1, eyebrow: 'Diabetic Retinopathy', title: 'Leaking vessels, hemorrhages, and fluid buildup — the damage RetiNexus AI is trained to catch in seconds.' },
+  { from: 0.74, to: 1, eyebrow: 'Diabetic Retinopathy', title: 'Leaking vessels, hemorrhages, and fluid buildup: the damage RetiNexus AI is trained to catch in seconds.' },
 ];
 
 /** Draws the given frame image into the canvas, letterboxed to fit like object-fit: contain. */
@@ -154,7 +154,7 @@ export default function EyeJourney() {
             <canvas ref={canvasRef} className="w-full h-full block" />
           </div>
           <p className="mt-6 text-center text-sm text-white/60 max-w-xl mx-auto">
-            Diabetic retinopathy develops deep inside the retina — RetiNexus AI reads a single fundus photo to catch it early.
+            Diabetic retinopathy develops deep inside the retina. RetiNexus AI reads a single fundus photo to catch it early.
           </p>
         </div>
       </section>

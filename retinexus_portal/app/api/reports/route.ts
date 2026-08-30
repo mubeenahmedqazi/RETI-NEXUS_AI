@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/db'
+import { uploadToCloudinary } from '@/lib/cloudinary'
+import { getReportImageUrl } from '@/lib/reportImages'
+import { API_BASE_URL } from '@/services/api'
 
 // GET all reports for authenticated user (Doctor or Patient)
 export async function GET(request: NextRequest) {
@@ -161,7 +164,7 @@ export async function POST(req: NextRequest) {
       description,
       imageUrl,
       processedAt,
-      reportData,
+      reportData: rawReportData,
       clinicalReport, // ✅ New field for LLM report
     } = body
 
@@ -184,6 +187,41 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // The 4 pipeline images (enhanced/vessel_mask/detected_lesions/gradcam) only exist on
+    // the Python backend's local disk at this point, referenced by bare filename — not
+    // durable (a backend redeploy/restart wipes them) and not CDN-backed, which is also
+    // why report/PDF image loads can be slow (every view re-fetches from that one backend
+    // host). Upload each to Cloudinary now, once, at save time, and persist the permanent
+    // secure_url instead — every later view then loads from Cloudinary's CDN, independent
+    // of the backend's uptime.
+    const localImages = (rawReportData?.images || {}) as Record<string, string>
+    let finalReportData = rawReportData || {}
+    let finalImageUrl = imageUrl || ''
+    let imagePublicId: string | undefined
+
+    if (Object.keys(localImages).length > 0) {
+      const uploaded = await Promise.all(
+        Object.entries(localImages).map(async ([key, filename]) => {
+          const backendUrl = getReportImageUrl(filename, API_BASE_URL)
+          if (!backendUrl) return [key, filename] as const
+          try {
+            const { url, publicId } = await uploadToCloudinary(backendUrl)
+            if (key === 'enhanced') {
+              finalImageUrl = url
+              imagePublicId = publicId
+            }
+            return [key, url] as const
+          } catch (err) {
+            // Fall back to the local filename rather than losing the reference entirely —
+            // the report still saves, it just won't have a durable image for this one.
+            console.error(`⚠️ Cloudinary upload failed for "${key}" (${filename}):`, err)
+            return [key, filename] as const
+          }
+        })
+      )
+      finalReportData = { ...rawReportData, images: Object.fromEntries(uploaded) }
+    }
+
     // ✅ Create the report with the patient
     const report = await prisma.report.create({
       data: {
@@ -193,9 +231,10 @@ export async function POST(req: NextRequest) {
         drGrade: drGrade || 'Unknown',
         confidence: confidence || 0,
         description: description || '',
-        imageUrl: imageUrl || '',
+        imageUrl: finalImageUrl,
+        imagePublicId,
         processedAt: processedAt || new Date().toISOString(),
-        reportData: reportData || {},
+        reportData: finalReportData,
         clinicalReport: clinicalReport || '', // ✅ Save LLM clinical report
         approved: true,
         approvedAt: new Date(),

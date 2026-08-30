@@ -4,11 +4,34 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { createUserWithEmailAndPassword, signInWithPopup, AuthError } from 'firebase/auth';
 import { Eye, EyeOff, Mail, Lock, User, Hospital, Phone, UserPlus, Stethoscope } from 'lucide-react';
 import AuthShell from '@/components/Common/AuthShell';
 import { FormField } from '@/components/ui/FormField';
 import Button from '@/components/Common/Button';
+import GoogleIcon from '@/components/ui/GoogleIcon';
 import Loader from '@/components/ui/Loader';
+import { auth, googleProvider } from '@/lib/firebase';
+
+const FIREBASE_ERROR_MESSAGES: Record<string, string> = {
+  'auth/email-already-in-use': 'An account with that email already exists — try signing in instead.',
+  'auth/weak-password': 'Password must be at least 6 characters.',
+  'auth/invalid-email': 'Please enter a valid email address.',
+  'auth/popup-closed-by-user': 'Sign-up was cancelled.',
+  'auth/configuration-not-found':
+    'Email/Password sign-up is not enabled for this project yet — enable it in the Firebase Console under Authentication → Sign-in method.',
+  'auth/operation-not-allowed':
+    'This sign-up method is not enabled for this project yet — enable it in the Firebase Console under Authentication → Sign-in method.',
+};
+
+function friendlyFirebaseError(err: unknown): string {
+  const code = (err as AuthError)?.code;
+  if (process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line no-console
+    console.error('Firebase auth error:', code, err);
+  }
+  return (code && FIREBASE_ERROR_MESSAGES[code]) || `Something went wrong${code ? ` (${code})` : ''}. Please try again.`;
+}
 
 export default function SignupPage() {
   const router = useRouter();
@@ -45,29 +68,54 @@ export default function SignupPage() {
     }
 
     try {
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const credential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const idToken = await credential.user.getIdToken();
+      await registerFirebaseDoctor(idToken);
+    } catch (err) {
+      setError(friendlyFirebaseError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const registerFirebaseDoctor = async (idToken: string) => {
+    const response = await fetch('/api/auth/firebase', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        idToken,
+        profile: {
           name: formData.name,
-          email: formData.email,
-          password: formData.password,
           hospital: formData.hospital,
           phone: formData.phone,
           specialization: formData.specialization,
-        }),
-      });
+        },
+      }),
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (response.ok) {
-        setSuccess(true);
-        setTimeout(() => router.push('/login'), 2000);
-      } else {
-        setError(data.error || 'Signup failed');
-      }
-    } catch (error) {
-      setError('Something went wrong. Please try again.');
+    // A pending-approval account correctly 403s here (it can't start a session yet) —
+    // that's still a successful signup, not a failure, so route both on `response.ok`
+    // (a rare already-approved case, e.g. re-linking an existing doctor) and the
+    // pending-approval 403 to the same success screen.
+    if (response.ok || data.error?.includes('pending admin approval')) {
+      setSuccess(true);
+      setTimeout(() => router.push('/login'), 2500);
+    } else {
+      setError(data.error || 'Signup failed');
+    }
+  };
+
+  const handleGoogleSignup = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const credential = await signInWithPopup(auth, googleProvider);
+      const idToken = await credential.user.getIdToken();
+      await registerFirebaseDoctor(idToken);
+    } catch (err) {
+      setError(friendlyFirebaseError(err));
     } finally {
       setLoading(false);
     }
@@ -82,7 +130,7 @@ export default function SignupPage() {
           </div>
           <h2 className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>Account Created!</h2>
           <p className="mt-2 mb-4" style={{ color: 'var(--muted-foreground)' }}>
-            Your doctor account has been successfully created.<br />Redirecting to login...
+            Your account is pending admin approval.<br />You&apos;ll be able to sign in once it&apos;s approved. Redirecting to login...
           </p>
           <Loader size="md" />
         </motion.div>
@@ -101,7 +149,7 @@ export default function SignupPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormField label="Full Name" required icon={User} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Dr. John Doe" />
         <FormField label="Email Address" required type="email" icon={Mail} value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="doctor@hospital.com" />
-        <FormField label="Hospital" required icon={Hospital} value={formData.hospital} onChange={(e) => setFormData({ ...formData, hospital: e.target.value })} placeholder="City Hospital" />
+        <FormField label="Hospital" icon={Hospital} value={formData.hospital} onChange={(e) => setFormData({ ...formData, hospital: e.target.value })} placeholder="City Hospital (optional)" />
         <FormField label="Phone Number" required type="tel" icon={Phone} value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="+1 234 567 8900" />
 
         <div>
@@ -134,6 +182,23 @@ export default function SignupPage() {
 
         <Button type="submit" variant="primary" fullWidth loading={loading} icon={<UserPlus className="w-4 h-4" />} glow className="mt-2">
           Create Account
+        </Button>
+
+        <div className="flex items-center gap-3 py-1">
+          <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+          <span className="text-xs" style={{ color: 'var(--subtle-foreground)' }}>OR</span>
+          <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+        </div>
+
+        <Button
+          type="button"
+          variant="secondary"
+          fullWidth
+          loading={loading}
+          icon={<GoogleIcon />}
+          onClick={handleGoogleSignup}
+        >
+          Sign up with Google
         </Button>
       </form>
 

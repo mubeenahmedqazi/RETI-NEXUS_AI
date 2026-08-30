@@ -46,10 +46,10 @@ type State = typeof AgentState.State;
 
 // --- Supervisor / router node ------------------------------------------------
 
-const ROUTER_PROMPT = `You route a user's message to one of two specialist agents. Reply with ONLY one word — no punctuation, no explanation:
+const ROUTER_PROMPT = `You route a user's message to one of two specialist agents. Reply with ONLY one word: no punctuation, no explanation:
 
-REPORT_SQL — the user wants to look up, fetch, or verify a specific patient screening report (mentions a report, report ID, "check my results", provides/asks for a name+phone+report ID, etc.)
-EYE_DOCTOR — anything else, including general questions about eyes, vision, diabetic retinopathy, or RetiNexus itself.`;
+REPORT_SQL: the user wants to look up, fetch, or verify a specific patient screening report (mentions a report, report ID, "check my results", provides/asks for a name+phone+report ID, etc.)
+EYE_DOCTOR: anything else, including general questions about eyes, vision, diabetic retinopathy, or RetiNexus itself.`;
 
 async function supervisorNode(state: State): Promise<Partial<State>> {
   // User explicitly picked a mode via the widget's quick-select buttons —

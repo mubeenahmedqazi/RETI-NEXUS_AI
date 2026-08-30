@@ -49,7 +49,7 @@ export default function Hero() {
           loop
           muted
           playsInline
-          preload="auto"
+          preload="metadata"
           tabIndex={-1}
           aria-hidden="true"
         />
@@ -71,7 +71,7 @@ export default function Hero() {
               </h1>
               <p className="mt-6 text-lg max-w-xl leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
                 Retinexus AI reads the retina&apos;s microvasculature to screen for diabetic retinopathy
-                and early signals of cardiac &amp; renal risk — instantly, non-invasively, from a single fundus photograph.
+                and early signals of cardiac &amp; renal risk  instantly, non-invasively, from a single fundus photograph.
               </p>
 
               <div className="mt-6 flex flex-wrap items-center gap-4 text-xs" style={{ color: 'var(--subtle-foreground)' }}>
@@ -79,7 +79,7 @@ export default function Hero() {
                   <Stethoscope className="w-3.5 h-3.5" /> Doctor Login
                 </Link>
                 <span className="opacity-40">•</span>
-                <Link href={PORTAL_LOGIN_URL} className="inline-flex items-center gap-1.5 hover:text-[var(--brand-secondary)] transition-colors">
+                <Link href={`${PORTAL_LOGIN_URL}?role=patient`} className="inline-flex items-center gap-1.5 hover:text-[var(--brand-secondary)] transition-colors">
                   <UserCircle className="w-3.5 h-3.5" /> Patient Login
                 </Link>
               </div>
@@ -109,7 +109,7 @@ export default function Hero() {
               <div className="relative w-full h-full rounded-full backdrop-blur-md bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 p-3 shadow-2xl">
                 <div className="relative w-full h-full rounded-full overflow-hidden">
                   <img
-                    src="/Eyeball.png"
+                    src="/Eyeball-optimized.webp"
                     alt=""
                     className="absolute inset-0 w-full h-full object-cover"
                   />

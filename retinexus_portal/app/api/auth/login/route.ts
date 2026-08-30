@@ -3,6 +3,10 @@ import { cookies } from 'next/headers';
 import { compare } from 'bcryptjs';
 import prisma from '@/lib/db';
 
+// Doctor login/signup now goes entirely through Firebase Auth — see
+// app/api/auth/firebase/route.ts. This route only handles patient login (phone number +
+// password, with a picker for shared phone numbers); a 'doctor' role request 400s
+// defensively in case any stale client still sends one.
 export async function POST(request: NextRequest) {
   try {
     const { email, password, role, patientId } = await request.json();
@@ -15,147 +19,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!role || !['doctor', 'patient'].includes(role)) {
+    if (role === 'doctor') {
       return NextResponse.json(
-        { error: 'Please select a valid role (Doctor or Patient)' },
+        { error: 'Doctor sign-in now uses Firebase — please use the Sign In / Continue with Google buttons.' },
         { status: 400 }
       );
     }
 
-    // === DOCTOR LOGIN ===
-    if (role === 'doctor') {
-      const doctor = await prisma.user.findUnique({
-        where: { email },
-        select: {
-          id: true,
-          email: true,
-          password: true,
-          name: true,
-          role: true,
-          hospital: true,
-          phone: true,
-          specialization: true,
-          isActive: true,
-        }
-      });
-
-      if (!doctor) {
-        return NextResponse.json(
-          { error: 'Invalid email or password' },
-          { status: 401 }
-        );
-      }
-
-      if (doctor.role !== 'DOCTOR') {
-        return NextResponse.json(
-          { error: 'Access denied. Only doctors can login.' },
-          { status: 403 }
-        );
-      }
-
-      if (!doctor.isActive) {
-        return NextResponse.json(
-          { error: 'Account is deactivated. Please contact support.' },
-          { status: 403 }
-        );
-      }
-
-      const isPasswordValid = await compare(password, doctor.password);
-      if (!isPasswordValid) {
-        return NextResponse.json(
-          { error: 'Invalid email or password' },
-          { status: 401 }
-        );
-      }
-
-      // Create session token for doctor
-      const tokenData = {
-        userId: doctor.id,
-        email: doctor.email,
-        name: doctor.name,
-        role: 'DOCTOR',
-        hospital: doctor.hospital,
-        phone: doctor.phone,
-        specialization: doctor.specialization,
-        exp: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
-      };
-      
-      const token = Buffer.from(JSON.stringify(tokenData)).toString('base64');
-
-      const cookieStore = await cookies();
-      
-      // Clear any existing cookies first
-      cookieStore.delete('auth_token');
-      cookieStore.delete('user_id');
-      cookieStore.delete('doctor_id'); // <-- Also delete doctor_id
-      cookieStore.delete('user_role');
-      cookieStore.delete('user_name');
-      cookieStore.delete('doctor_name'); // <-- Also delete doctor_name
-
-      // Set new cookies - SET BOTH user_id AND doctor_id
-      cookieStore.set('auth_token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24,
-        path: '/',
-      });
-      
-      // Set user_id (for general use)
-      cookieStore.set('user_id', doctor.id, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24,
-        path: '/',
-      });
-
-      // ✅ CRITICAL: Set doctor_id (for dashboard compatibility)
-      cookieStore.set('doctor_id', doctor.id, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24,
-        path: '/',
-      });
-
-      cookieStore.set('user_role', 'DOCTOR', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24,
-        path: '/',
-      });
-
-      // Set both user_name and doctor_name
-      cookieStore.set('user_name', doctor.name, {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24,
-        path: '/',
-      });
-
-      cookieStore.set('doctor_name', doctor.name, {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24,
-        path: '/',
-      });
-
-      return NextResponse.json({
-        success: true,
-        userId: doctor.id,
-        doctorId: doctor.id,
-        name: doctor.name,
-        email: doctor.email,
-        hospital: doctor.hospital,
-        phone: doctor.phone,
-        specialization: doctor.specialization,
-        role: 'DOCTOR',
-        redirectTo: '/dashboard',
-      });
+    if (role !== 'patient') {
+      return NextResponse.json(
+        { error: 'Please select a valid role (Doctor or Patient)' },
+        { status: 400 }
+      );
     }
 
     // === PATIENT LOGIN ===

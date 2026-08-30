@@ -4,7 +4,7 @@ import PageHero from '@/components/ui/PageHero';
 import LegalContent from '@/components/ui/LegalContent';
 import Footer from '@/components/Footer';
 
-export const metadata: Metadata = { title: 'Privacy Policy — Retinexus AI' };
+export const metadata: Metadata = { title: 'Privacy Policy | Retinexus AI' };
 
 export default function PrivacyPage() {
   return (
@@ -34,7 +34,7 @@ export default function PrivacyPage() {
           <p className="mt-2">
             When a doctor uses the portal, we store the account details they register with, the patient records
             they create, the fundus images uploaded for analysis, and the AI-generated reports produced from
-            those images — solely to run the screening pipeline and produce a report for the doctor and patient
+            those images, solely to run the screening pipeline and produce a report for the doctor and patient
             involved. Nothing is sold or shared outside the system without consent.
           </p>
         </section>
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold" style={{ color: 'var(--foreground)' }}>Context</h2>
           <p className="mt-2">
             This is a research and educational system built by students at COMSATS University Islamabad, Lahore
-            Campus — not a commercial product.
+            Campus, not a commercial product.
           </p>
         </section>
       </LegalContent>

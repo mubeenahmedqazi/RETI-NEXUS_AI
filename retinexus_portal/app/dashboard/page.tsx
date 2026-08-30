@@ -6,7 +6,7 @@ import {
   Hospital, Stethoscope, ScanEye,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { getReports, getPatients } from '@/services/api';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/ui/PageHeader';
@@ -91,6 +91,20 @@ export default function DashboardPage() {
   });
   const trendData = Array.from(trendMap.entries()).slice(-7).map(([date, count]) => ({ date, count }));
 
+  // Last 6 calendar months' report volume — a longer-term complement to the 7-day
+  // activity trend above, grouped by month rather than by day.
+  const monthlyMap = new Map<string, number>();
+  reports.forEach((r) => {
+    const d = r.approvedAt || r.createdAt;
+    if (!d) return;
+    const key = format(new Date(d), 'MMM yyyy');
+    monthlyMap.set(key, (monthlyMap.get(key) || 0) + 1);
+  });
+  const monthlyData = Array.from(monthlyMap.entries())
+    .sort((a, b) => new Date(`1 ${a[0]}`).getTime() - new Date(`1 ${b[0]}`).getTime())
+    .slice(-6)
+    .map(([month, count]) => ({ month, count }));
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -116,7 +130,7 @@ export default function DashboardPage() {
         }
         actions={
           <button
-            onClick={() => router.push('/dashboard/patients')}
+            onClick={() => router.push('/dashboard/patients/analysis')}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[var(--brand-secondary)] to-[var(--brand-accent)] text-white font-medium hover:shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 hover:scale-105 whitespace-nowrap"
           >
             <ScanEye className="w-4 h-4" />
@@ -200,6 +214,31 @@ export default function DashboardPage() {
             </ResponsiveContainer>
           </div>
         </div>
+      </div>
+
+      {/* Monthly volume — longer-term complement to the 7-day trend above */}
+      <div className="surface rounded-2xl p-6">
+        <h3 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
+          <FileText className="w-5 h-5 text-[var(--brand-secondary)]" />
+          Monthly Screening Volume
+        </h3>
+        {monthlyData.length === 0 ? (
+          <div className="py-10 text-center" style={{ color: 'var(--muted-foreground)' }}>
+            <p>No reports yet</p>
+          </div>
+        ) : (
+          <div className="h-64 mt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} width={28} />
+                <Tooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--foreground)' }} cursor={{ fill: 'var(--muted)' }} />
+                <Bar dataKey="count" fill="var(--brand-secondary)" radius={[6, 6, 0, 0]} maxBarSize={48} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
     </div>
   );

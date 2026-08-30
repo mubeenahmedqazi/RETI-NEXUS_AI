@@ -307,6 +307,15 @@ body {
     margin: 14mm 12mm;
   }
 
+  /* body*'s descendants get hidden below, but body itself is untouched — in dark theme
+     its dark --background still shows through on any part of the physical page the
+     (content-sized, not page-sized) #pdf-report-content box doesn't cover, e.g. the
+     empty space below the footer on a page that doesn't fully fill. Force both to white
+     so print is always a plain white page regardless of the active on-screen theme. */
+  html, body {
+    background: #ffffff !important;
+  }
+
   /* Force the light clinical palette regardless of the active on-screen theme —
      printed/PDF output always reads as a formal white lab report. */
   #pdf-report-content,
@@ -457,9 +466,10 @@ body {
   }
   #pdf-report-content .biomarker-card, #pdf-detailed-analysis-content .biomarker-card {
     display: flex !important;
+    flex-wrap: wrap !important;
     align-items: baseline !important;
     justify-content: space-between !important;
-    gap: 8px !important;
+    gap: 2px 8px !important;
     padding: 2px 0 !important;
     margin: 0 !important;
     border: none !important;
@@ -483,9 +493,13 @@ body {
        runs straight into the name (e.g. "Vessel TortuosityNormal"). */
     margin-left: 6px !important;
   }
-  /* Redundant with the biomarker name/status line — dropped to save vertical space. */
+  /* Shown inline, compact, right after the value — so the printed report states what
+     range each value is being judged "Elevated"/"Low" against, not just the verdict. */
   #pdf-report-content .biomarker-range-caption, #pdf-detailed-analysis-content .biomarker-range-caption {
-    display: none !important;
+    display: inline !important;
+    font-size: 9px !important;
+    margin: 0 0 0 4px !important;
+    white-space: nowrap !important;
   }
 
   /* Name on the left, count on the right — DOM order is value-then-label on
@@ -511,12 +525,14 @@ body {
     break-before: page;
     page-break-before: always;
   }
-  /* Screening report: page 2 always starts at "Recommended Follow-up Tests"
-     (shown even with none suggested), with the output images flowing directly
-     below it on the same page. */
-  #pdf-report-content .pdf-page2-start {
-    break-before: page;
-    page-break-before: always;
+  /* Screening report: Recommended Follow-up Tests + Output Images are kept together as
+     one unit and only pushed to a fresh page when page 1 genuinely has no room left for
+     them. A previous version forced this pair to always start a new page 2, which left a
+     near-empty page 2 for short reports (e.g. grade 0, "No test recommended") — letting
+     the browser's natural pagination decide means short reports simply stay on page 1. */
+  #pdf-report-content .pdf-tests-images-group {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
   #pdf-report-content .pdf-images-page .image-output-grid, #pdf-detailed-analysis-content .pdf-images-page .image-output-grid {
     grid-template-columns: repeat(2, 1fr) !important;

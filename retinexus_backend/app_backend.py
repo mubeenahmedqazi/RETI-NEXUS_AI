@@ -2,6 +2,7 @@ import os
 import json
 import shutil
 import sys
+import subprocess
 from datetime import datetime
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
@@ -325,6 +326,93 @@ async def detailed_test_analysis(
         )
 
     result["extractionMethod"] = extraction["method"]
+    return JSONResponse(content=result)
+
+
+# ─── PATIENT LONGITUDINAL HISTORY (CrewAI + Pydantic) ─────────────────────────
+# This pipeline (patient_longitudinal_history/) needs crewai + psycopg2, which need
+# Python <3.14 — incompatible with the Python this main server runs on. It lives in its
+# own venv (retinexus_backend/.venv-longitudinal, Python 3.12) and is invoked here as a
+# subprocess via its CLI entry point (patient_longitudinal_history/main.py), rather than
+# imported directly, so the two dependency trees never have to coexist in one interpreter.
+
+_LONGITUDINAL_VENV_PYTHON = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), ".venv-longitudinal", "Scripts", "python.exe")
+)
+
+
+class LongitudinalHistoryPhoneRequest(BaseModel):
+    phone_number: str
+
+
+class LongitudinalHistoryAnalyzeRequest(BaseModel):
+    phone_number: str
+    patient_id: str | None = None
+
+
+def _run_longitudinal_history_cli(args: list[str], timeout: int) -> dict:
+    if not os.path.exists(_LONGITUDINAL_VENV_PYTHON):
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Patient Longitudinal History engine is not set up — run: "
+                "python -m venv .venv-longitudinal && "
+                ".venv-longitudinal\\Scripts\\pip install crewai pydantic psycopg2-binary python-dotenv"
+            ),
+        )
+    # CrewAI's own verbose logging can print emoji — Windows' default console codepage
+    # (cp1252) can't encode those and would otherwise crash the subprocess entirely.
+    child_env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
+    try:
+        proc = subprocess.run(
+            [_LONGITUDINAL_VENV_PYTHON, "-m", "patient_longitudinal_history.main", *args],
+            cwd=os.path.dirname(__file__),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
+            env=child_env,
+        )
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=504, detail="Longitudinal history analysis timed out.")
+
+    # CrewAI's verbose=True agents print their own progress chatter to stdout during a
+    # run, so the result line is found by an exact marker prefix (see main.py's
+    # RESULT_MARKER), not just assumed to be "the last line".
+    marker = "###LONGITUDINAL_HISTORY_RESULT###"
+    result_line = next((l for l in proc.stdout.splitlines() if l.startswith(marker)), None)
+    if result_line is None:
+        print(f"[!] Longitudinal history subprocess produced no result marker. stdout tail:\n{proc.stdout[-2000:]}\nstderr:\n{proc.stderr[-4000:]}")
+        raise HTTPException(status_code=502, detail="Longitudinal history engine returned no output.")
+
+    try:
+        payload = json.loads(result_line[len(marker):])
+    except json.JSONDecodeError:
+        print(f"[!] Longitudinal history subprocess returned unparseable result: {result_line!r}\nstderr:\n{proc.stderr[-4000:]}")
+        raise HTTPException(status_code=502, detail="Longitudinal history engine returned an unparseable result.")
+
+    if proc.returncode != 0 or "error" in payload:
+        raise HTTPException(status_code=404, detail=payload.get("error", "No matching patient or reports found."))
+
+    return payload
+
+
+@app.post("/longitudinal-history/patients")
+async def longitudinal_history_patients(payload: LongitudinalHistoryPhoneRequest):
+    """Step 1 of the frontend flow: resolve a phone number to the patient account(s) it
+    matches, so the user can pick the right one before the analysis runs."""
+    result = _run_longitudinal_history_cli(["list-patients", payload.phone_number], timeout=20)
+    return JSONResponse(content=result)
+
+
+@app.post("/longitudinal-history/analyze")
+async def longitudinal_history_analyze(payload: LongitudinalHistoryAnalyzeRequest):
+    """Step 2: runs the full CrewAI pipeline (Extraction -> Clinical Reasoning ->
+    Validation) against the selected patient's last (up to) 3 reports. Slower than a
+    normal request — three sequential LLM calls — hence the generous timeout."""
+    args = [payload.phone_number] + ([payload.patient_id] if payload.patient_id else [])
+    result = _run_longitudinal_history_cli(args, timeout=280)
     return JSONResponse(content=result)
 
 

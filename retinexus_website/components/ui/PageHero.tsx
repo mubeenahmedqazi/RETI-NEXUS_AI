@@ -55,7 +55,7 @@ export default function PageHero({ title, description, backgroundImage, backgrou
             loop
             muted
             playsInline
-            preload="auto"
+            preload="metadata"
             tabIndex={-1}
             aria-hidden="true"
           />

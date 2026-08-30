@@ -48,7 +48,7 @@ export default function Nav() {
       style={{ pointerEvents: hiddenForEyeJourney ? 'none' : 'auto' }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6">
-        <div className="rounded-2xl backdrop-blur-lg bg-white/45 dark:bg-slate-900/40 border border-slate-200/60 dark:border-white/10 shadow-lg shadow-slate-900/[0.06] dark:shadow-black/20">
+        <div className="rounded-2xl backdrop-blur-lg bg-white dark:bg-slate-900/40 border border-slate-200/60 dark:border-white/10 shadow-lg shadow-slate-900/[0.06] dark:shadow-black/20">
           <div className="px-4 sm:px-6 py-3 flex items-center justify-between">
             <Link href="/" className="hover-wobble">
               <Logo size={44} withWordmark withTagline />
