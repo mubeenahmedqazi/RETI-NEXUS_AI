@@ -34,4 +34,4 @@ api.upload_folder(
     token=HF_TOKEN
 )
 
-print("✅ Upload Complete! Models HF Private Repo par push ho chukay hain.")
+print("✅ Upload Complete.")

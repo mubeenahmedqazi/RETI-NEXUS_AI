@@ -423,8 +423,8 @@ class ReportTransformer:
     GRADE_MAP = {0: "No DR", 1: "Mild NPDR", 2: "Moderate NPDR", 3: "Severe NPDR", 4: "PDR"}
 
     NORMAL_RANGES_BY_GRADE = {
-        0: {"tortuosity": (0.5, 1.2), "density": (10, 25), "branching": (50, 150), "avr": (0.55, 0.75), "micro": (0, 0), "hemo": (0, 0), "hard": (0, 0), "soft": (0, 0)},
-        1: {"tortuosity": (0.5, 1.3), "density": (8, 28), "branching": (40, 180), "avr": (0.50, 0.78), "micro": (0, 2), "hemo": (0, 1), "hard": (0, 0), "soft": (0, 0)},
+        0: {"tortuosity": (0.5, 1.2), "density": (10, 25), "branching": (50, 150), "avr": (0.55, 0.75), "micro": (0, 0), "hemo": (0, 0), "hard": (0, 0), "soft": (0, 1)},
+        1: {"tortuosity": (0.5, 1.3), "density": (8, 28), "branching": (40, 180), "avr": (0.50, 0.78), "micro": (0, 2), "hemo": (0, 1), "hard": (0, 0), "soft": (0, 2)},
         2: {"tortuosity": (0.4, 1.4), "density": (8, 30), "branching": (30, 200), "avr": (0.45, 0.80), "micro": (0, 5), "hemo": (0, 3), "hard": (0, 2), "soft": (0, 1)},
         3: {"tortuosity": (0.3, 1.5), "density": (5, 35), "branching": (20, 250), "avr": (0.40, 0.85), "micro": (0, 10), "hemo": (0, 8), "hard": (0, 5), "soft": (0, 3)},
         4: {"tortuosity": (0.3, 1.6), "density": (5, 40), "branching": (10, 300), "avr": (0.35, 0.90), "micro": (0, 15), "hemo": (0, 12), "hard": (0, 8), "soft": (0, 5)},

@@ -74,6 +74,7 @@ export default function ReportDetailPage() {
       return;
     }
     toast.success(`Report ${formatReportId(report.reportNumber)} deleted`);
+    if (data.warning) toast.warn(data.warning);
     router.push(`/dashboard/patients/${report.patientId}`);
   };
 

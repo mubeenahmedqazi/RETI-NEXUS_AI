@@ -47,7 +47,7 @@ export const checkBackendHealth = async (): Promise<boolean> => {
     console.log('🏥 Backend health:', response.data);
     return response.status === 200 && response.data?.status === 'healthy';
   } catch (error) {
-    console.error('❌ Backend health check failed');
+    console.error(' Backend health check failed');
     return false;
   }
 };
@@ -82,12 +82,12 @@ export const saveReport = async (reportData: {
     try {
       data = JSON.parse(text);
     } catch (e) {
-      console.error('❌ Failed to parse response:', text);
+      console.error(' Failed to parse response:', text);
       throw new Error('Invalid server response');
     }
 
     if (!response.ok) {
-      console.error('❌ Server response:', text);
+      console.error(' Server response:', text);
       throw new Error(data.error || `Server error: ${response.status}`);
     }
 
@@ -95,7 +95,7 @@ export const saveReport = async (reportData: {
     return data;
     
   } catch (error) {
-    console.error('❌ Save report error:', error);
+    console.error(' Save report error:', error);
     throw new Error(error instanceof Error ? error.message : 'Failed to save report');
   }
 };
