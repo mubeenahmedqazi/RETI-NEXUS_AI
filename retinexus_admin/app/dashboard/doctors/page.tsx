@@ -228,7 +228,7 @@ export default function DoctorsPage() {
       {deleting && (
         <ConfirmDeleteModal
           title={`Delete ${deleting.name}?`}
-          description={`This permanently removes ${deleting.name}'s account. Doctors with existing patients or clinical records can't be deleted — reassign or clear those first.`}
+          description={`This permanently removes ${deleting.name}'s account. Doctors with existing patients or clinical records can't be deleted; reassign or clear those first.`}
           onClose={() => setDeleting(null)}
           onConfirm={() => handleDelete(deleting)}
         />

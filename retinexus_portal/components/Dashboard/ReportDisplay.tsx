@@ -198,10 +198,14 @@ export default function ReportDisplay({
 
   const imageLabels: Record<string, string> = {
     enhanced: 'Enhanced Image',
-    vessel_mask: 'Vessel Segmentation',
-    detected_lesions: 'Lesion Detection',
-    gradcam: 'Grad-CAM Visualization',
+    vessel_mask: 'Vessel Segmentation Mask',
+    detected_lesions: 'Lesion Detection / Bounding Boxes',
+    gradcam: 'Grad-CAM / Heatmap Analysis',
   };
+  // Fixed display order — `report.images`' own key order depends on the backend's JSON
+  // construction and isn't guaranteed consistent run to run, so images are always shown
+  // in this order regardless of how they're stored.
+  const IMAGE_ORDER = ['enhanced', 'vessel_mask', 'detected_lesions', 'gradcam'];
 
   const handleDownloadPDF = () => {
     setIsDownloading(true);
@@ -608,7 +612,8 @@ export default function ReportDisplay({
                 Analysis Output Images
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 image-output-grid">
-                {Object.entries(report.images).map(([key, filename]) => {
+                {IMAGE_ORDER.filter((key) => report.images?.[key]).map((key) => {
+                  const filename = report.images![key];
                   const imageUrl = getImageUrl(filename as string);
 
                   if (!imageUrl) {

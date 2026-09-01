@@ -122,7 +122,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     if (detailedAnalyses > 0) parts.push(`${detailedAnalyses} detailed analysis record${detailedAnalyses === 1 ? '' : 's'}`);
     return NextResponse.json(
       {
-        error: `Cannot delete ${existing.name} — still has ${parts.join(', ')}. Reassign their patients to another doctor first (Patients page); doctors with existing screening or detailed-analysis records can't be deleted.`,
+        error: `Cannot delete ${existing.name}: still has ${parts.join(', ')}. Reassign their patients to another doctor first (Patients page); doctors with existing screening or detailed-analysis records can't be deleted.`,
       },
       { status: 409 }
     );
@@ -136,7 +136,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   if (existing.firebaseUid) {
     const result = await deleteFirebaseUser(existing.firebaseUid);
     if (result.status === 'skipped_not_configured') {
-      firebaseWarning = `${existing.name}'s account was removed, but their Firebase sign-in identity was NOT deleted — the Firebase Admin service account isn't configured yet. Remove it manually in the Firebase Console (Authentication → Users) if needed.`;
+      firebaseWarning = `${existing.name}'s account was removed, but their Firebase sign-in identity was NOT deleted because the Firebase Admin service account isn't configured yet. Remove it manually in the Firebase Console (Authentication → Users) if needed.`;
     } else if (result.status === 'error') {
       firebaseWarning = `${existing.name}'s account was removed, but deleting their Firebase sign-in identity failed: ${result.message}. You may need to remove it manually in the Firebase Console.`;
     }

@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Mail, Hospital, Phone, Stethoscope, Users, Pencil } from 'lucide-react';
+import { ArrowLeft, Mail, Hospital, Phone, Stethoscope, Users, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
 import Button from '@/components/Common/Button';
 import { Swirling } from '@/components/ui/Swirling';
 import EditDoctorModal from '@/components/Dashboard/EditDoctorModal';
+import ConfirmDeleteModal from '@/components/Dashboard/ConfirmDeleteModal';
 import type { Doctor } from '../types';
 
 interface DoctorDetail extends Doctor {
@@ -24,6 +25,7 @@ export default function DoctorDetailPage() {
   const [doctor, setDoctor] = useState<DoctorDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -52,6 +54,18 @@ export default function DoctorDetailPage() {
     );
   }
 
+  const handleDelete = async () => {
+    const response = await fetch(`/api/doctors/${doctor.id}`, { method: 'DELETE' });
+    const data = await response.json();
+    if (!response.ok) {
+      toast.error(data.error || 'Failed to delete doctor');
+      return;
+    }
+    toast.success(`${doctor.name} deleted`);
+    if (data.warning) toast.warn(data.warning, { autoClose: 10000 });
+    router.push('/dashboard/doctors');
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -64,6 +78,7 @@ export default function DoctorDetailPage() {
               <Button variant="outline" icon={<ArrowLeft className="w-4 h-4" />}>Back</Button>
             </Link>
             <Button variant="secondary" icon={<Pencil className="w-4 h-4" />} onClick={() => setEditing(true)}>Edit</Button>
+            <Button variant="ghost" icon={<Trash2 className="w-4 h-4 text-red-500" />} onClick={() => setDeleting(true)}>Delete</Button>
           </>
         }
       />
@@ -138,6 +153,15 @@ export default function DoctorDetailPage() {
           doctor={doctor}
           onClose={() => setEditing(false)}
           onSaved={(updated) => setDoctor((prev) => (prev ? { ...prev, ...updated } : prev))}
+        />
+      )}
+
+      {deleting && (
+        <ConfirmDeleteModal
+          title={`Delete ${doctor.name}?`}
+          description="This permanently removes the doctor's account. Doctors with existing patients or clinical records can't be deleted — reassign or clear those first."
+          onClose={() => setDeleting(false)}
+          onConfirm={handleDelete}
         />
       )}
     </div>

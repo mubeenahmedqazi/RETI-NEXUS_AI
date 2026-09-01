@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Phone, Cake, User as UserIcon, MapPin, Droplet, Stethoscope, FileText, AlertTriangle, Pencil } from 'lucide-react';
+import { ArrowLeft, Phone, Cake, User as UserIcon, MapPin, Droplet, Stethoscope, FileText, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
 import Button from '@/components/Common/Button';
 import { Swirling } from '@/components/ui/Swirling';
 import EditPatientModal from '@/components/Dashboard/EditPatientModal';
+import ConfirmDeleteModal from '@/components/Dashboard/ConfirmDeleteModal';
+import { formatAnalysisId, formatReportId } from '@/lib/reportId';
 import type { Patient, DoctorOption } from '../types';
 
 interface ReportSummary {
@@ -53,6 +55,7 @@ export default function PatientDetailPage() {
   const [doctors, setDoctors] = useState<DoctorOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -86,18 +89,30 @@ export default function PatientDetailPage() {
     );
   }
 
+  const handleDelete = async () => {
+    const response = await fetch(`/api/patients/${patient.id}`, { method: 'DELETE' });
+    const data = await response.json();
+    if (!response.ok) {
+      toast.error(data.error || 'Failed to delete patient');
+      return;
+    }
+    toast.success(`${patient.name} deleted`);
+    router.push('/dashboard/patients');
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Admin Console"
         title={patient.name}
-        description={patient.doctor ? `Under ${patient.doctor.name}` : 'Self-registered — no assigned doctor'}
+        description={patient.doctor ? `Registered with ${patient.doctor.name}` : 'Self-registered, no assigned doctor'}
         actions={
           <>
             <Link href={patient.doctorId ? `/dashboard/doctors/${patient.doctorId}` : '/dashboard/patients'}>
               <Button variant="outline" icon={<ArrowLeft className="w-4 h-4" />}>Back</Button>
             </Link>
             <Button variant="secondary" icon={<Pencil className="w-4 h-4" />} onClick={() => setEditing(true)}>Edit</Button>
+            <Button variant="ghost" icon={<Trash2 className="w-4 h-4 text-red-500" />} onClick={() => setDeleting(true)}>Delete</Button>
           </>
         }
       />
@@ -132,15 +147,20 @@ export default function PatientDetailPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b" style={{ borderColor: 'var(--border)' }}>
-                    {['#', 'DR Grade', 'Confidence', 'Description', 'Date'].map((h) => (
+                    {['Report ID', 'DR Grade', 'Confidence', 'Description', 'Date'].map((h) => (
                       <th key={h} className="text-left px-5 py-3 font-medium" style={{ color: 'var(--muted-foreground)' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {patient.reports.map((r) => (
-                    <tr key={r.id} className="border-b last:border-0" style={{ borderColor: 'var(--border)' }}>
-                      <td className="px-5 py-3.5" style={{ color: 'var(--muted-foreground)' }}>#{r.reportNumber}</td>
+                    <tr
+                      key={r.id}
+                      className="border-b last:border-0 hover:bg-[var(--muted)]/50 transition-colors cursor-pointer"
+                      style={{ borderColor: 'var(--border)' }}
+                      onClick={() => router.push(`/dashboard/reports/${r.id}`)}
+                    >
+                      <td className="px-5 py-3.5 font-medium hover:underline" style={{ color: 'var(--brand-secondary)' }}>{formatReportId(r.reportNumber)}</td>
                       <td className="px-5 py-3.5">
                         <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: 'var(--muted)', color: GRADE_COLOR[r.drGrade] || 'var(--foreground)' }}>
                           {r.drGrade}
@@ -167,9 +187,18 @@ export default function PatientDetailPage() {
         ) : (
           <div className="space-y-3">
             {patient.detailedAnalyses.map((d) => (
-              <div key={d.id} className="surface rounded-2xl p-5">
+              <div
+                key={d.id}
+                className="surface rounded-2xl p-5 hover:border-[var(--brand-accent)]/40 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                onClick={() => router.push(`/dashboard/detailed-analyses/${d.id}`)}
+              >
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <p className="font-semibold" style={{ color: 'var(--foreground)' }}>{d.testName}</p>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="font-semibold truncate" style={{ color: 'var(--foreground)' }}>{d.testName}</p>
+                    <span className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0" style={{ background: 'var(--muted)', color: 'var(--brand-secondary)' }}>
+                      {formatAnalysisId(d.id)}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2">
                     {d.redFlags.length > 0 && (
                       <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-red-500/10 text-red-500">
@@ -192,6 +221,15 @@ export default function PatientDetailPage() {
           doctors={doctors}
           onClose={() => setEditing(false)}
           onSaved={(updated) => setPatient((prev) => (prev ? { ...prev, ...updated } : prev))}
+        />
+      )}
+
+      {deleting && (
+        <ConfirmDeleteModal
+          title={`Delete ${patient.name}?`}
+          description={`This permanently removes ${patient.name}'s profile. Patients with existing screening or detailed-analysis records can't be deleted.`}
+          onClose={() => setDeleting(false)}
+          onConfirm={handleDelete}
         />
       )}
     </div>

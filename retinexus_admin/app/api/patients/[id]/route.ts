@@ -132,7 +132,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     if (reports > 0) parts.push(`${reports} screening report${reports === 1 ? '' : 's'}`);
     if (detailedAnalyses > 0) parts.push(`${detailedAnalyses} detailed analysis record${detailedAnalyses === 1 ? '' : 's'}`);
     return NextResponse.json(
-      { error: `Cannot delete ${existing.name} — has ${parts.join(', ')} on file. Patients with existing clinical records can't be deleted.` },
+      { error: `Cannot delete ${existing.name}: has ${parts.join(', ')} on file. Patients with existing clinical records can't be deleted.` },
       { status: 409 }
     );
   }

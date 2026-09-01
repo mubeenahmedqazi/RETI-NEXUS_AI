@@ -334,6 +334,21 @@ body {
     --glass-border: #e2e8f0;
   }
 
+  /* Both reports can be opened from a height-clamped, scrollable modal (the Reports and
+     Detailed Analyses list pages' "Download" button, the patient detail page's expandable
+     report card, etc.) — several different `max-h-[..vh] overflow-y-auto` wrappers, not
+     one shared component. `position: absolute` on #pdf-report-content only escapes those
+     ancestors' *layout offset*, not their *clipping* — an `overflow: hidden`/`auto`
+     ancestor still clips everything painted inside it, print included, so only whatever
+     fit in the on-screen scroll area was ever printed (a truncated PDF, missing whatever
+     was 1-2 pages below the fold). This is the actual fix: printing never scrolls, so
+     resetting overflow/height on every element removes that clipping everywhere at once,
+     for every current and future modal wrapper, rather than patching each one by hand. */
+  body * {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
   body * { visibility: hidden; }
   #pdf-report-content, #pdf-report-content *,
   #pdf-detailed-analysis-content, #pdf-detailed-analysis-content * {
@@ -341,7 +356,7 @@ body {
   }
   #pdf-report-content,
   #pdf-detailed-analysis-content {
-    position: absolute;
+    position: absolute !important;
     left: 0;
     top: 0;
     width: 100%;
@@ -534,13 +549,27 @@ body {
     break-inside: avoid;
     page-break-inside: avoid;
   }
+  /* CSS Grid rows don't fragment reliably across a print page break in Chromium — when
+     the images page doesn't fit cleanly, grid can render the next row overlapping the
+     one above it. Flexbox with wrap handles print pagination correctly, so the image
+     cards use flex here (still a 2-column layout via each card's flex-basis) with
+     break-inside: avoid on each card so a card is always moved whole, never split. */
   #pdf-report-content .pdf-images-page .image-output-grid, #pdf-detailed-analysis-content .pdf-images-page .image-output-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 5mm !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6mm !important;
+    margin-top: 10mm !important;
+  }
+  #pdf-report-content .pdf-images-page .image-output-grid > *, #pdf-detailed-analysis-content .pdf-images-page .image-output-grid > * {
+    flex: 0 0 calc(50% - 3mm) !important;
+    max-width: calc(50% - 3mm) !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
   #pdf-report-content .pdf-images-page .image-output-grid img, #pdf-detailed-analysis-content .pdf-images-page .image-output-grid img {
     height: 175px !important;
     object-fit: cover !important;
+    width: 100% !important;
   }
 
   /* Screening report: when suggested follow-up tests are shown, that extra section
@@ -597,6 +626,10 @@ body {
      report's, so its images run larger to actually fill the page. */
   #pdf-detailed-analysis-content .pdf-images-page .image-output-grid {
     gap: 10mm !important;
+  }
+  #pdf-detailed-analysis-content .pdf-images-page .image-output-grid > * {
+    flex-basis: calc(50% - 5mm) !important;
+    max-width: calc(50% - 5mm) !important;
   }
   #pdf-detailed-analysis-content .pdf-images-page .image-output-grid img {
     height: 280px !important;

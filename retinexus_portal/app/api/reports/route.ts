@@ -65,6 +65,8 @@ export async function GET(request: NextRequest) {
             select: {
               name: true,
               phone: true,
+              age: true,
+              gender: true,
             }
           }
         }

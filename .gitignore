@@ -26,11 +26,12 @@ lancedb/
 *.db
 *.sqlite3
 
-# Ignore output images and visualizations
+# Ignore output images and visualizations (scoped to the backend so app
+# public/ folders — admin & portal logos etc. — aren't caught by a blanket rule)
 backend/output_results/
-*.png
-*.jpg
-*.jpeg
+retinexus_backend/**/*.png
+retinexus_backend/**/*.jpg
+retinexus_backend/**/*.jpeg
 
 # Node / Next.js
 node_modules/

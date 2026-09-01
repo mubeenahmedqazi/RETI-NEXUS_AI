@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { Users, Pencil, UserX, Trash2 } from 'lucide-react';
@@ -13,6 +14,7 @@ import ConfirmDeleteModal from '@/components/Dashboard/ConfirmDeleteModal';
 import type { Patient, DoctorOption } from './types';
 
 export default function PatientsPage() {
+  const router = useRouter();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<DoctorOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +56,7 @@ export default function PatientsPage() {
       <PageHeader
         eyebrow="Admin Console"
         title="Patients"
-        description="Every patient across the platform — edit details or reassign a doctor. Patient accounts can't be blocked here."
+        description="Every patient across the platform. Edit details or reassign a doctor here; patient accounts can't be blocked."
       />
 
       {loading ? (
@@ -81,10 +83,11 @@ export default function PatientsPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.02 }}
-                    className="border-b last:border-0 hover:bg-[var(--muted)]/50 transition-colors"
+                    className="border-b last:border-0 hover:bg-[var(--muted)]/50 transition-colors cursor-pointer"
                     style={{ borderColor: 'var(--border)' }}
+                    onClick={() => router.push(`/dashboard/patients/${p.id}`)}
                   >
-                    <td className="px-5 py-3.5 font-medium" style={{ color: 'var(--foreground)' }}>{p.name}</td>
+                    <td className="px-5 py-3.5 font-medium hover:underline" style={{ color: 'var(--foreground)' }}>{p.name}</td>
                     <td className="px-5 py-3.5" style={{ color: 'var(--muted-foreground)' }}>{p.phone}</td>
                     <td className="px-5 py-3.5" style={{ color: 'var(--muted-foreground)' }}>
                       {p.age ?? '—'}{p.gender ? ` • ${p.gender}` : ''}
@@ -101,7 +104,7 @@ export default function PatientsPage() {
                     <td className="px-5 py-3.5 text-xs" style={{ color: 'var(--subtle-foreground)' }}>
                       {new Date(p.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
                       <div className="flex justify-end">
                         <Button size="sm" variant="ghost" icon={<Pencil className="w-3.5 h-3.5" />} onClick={() => setEditing(p)}>
                           Edit

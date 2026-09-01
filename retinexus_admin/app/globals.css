@@ -227,3 +227,262 @@ body {
 }
 .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
 .scrollbar-thin { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+
+/* ==========================================================================
+   Print (Download button on report / detailed-analysis detail pages) —
+   verbatim port of the portal's print rules (see retinexus_portal/app/globals.css),
+   covering both #pdf-report-content (AdminReportView, mirrors ReportDisplay) and
+   #pdf-detailed-analysis-content (AdminDetailedAnalysisView, mirrors
+   DetailedAnalysisReport) so both PDF outputs are pixel-identical to the portal's.
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 12mm;
+  }
+
+  html, body {
+    background: #ffffff !important;
+  }
+
+  #pdf-report-content,
+  #pdf-detailed-analysis-content {
+    --background: #ffffff;
+    --background-elevated: #ffffff;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --muted: #f1f5f9;
+    --muted-foreground: #475569;
+    --subtle-foreground: #64748b;
+    --border: #cbd5e1;
+    --border-strong: #94a3b8;
+    --foreground: #0f172a;
+    --glass-bg: #ffffff;
+    --glass-border: #e2e8f0;
+  }
+
+  /* Defense-in-depth, mirroring the portal's globals.css: printing never scrolls, so
+     resetting overflow/height on every element removes any accidental scroll-clipping
+     from a future height-constrained wrapper before it can ever truncate a PDF. */
+  body * {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  body * { visibility: hidden; }
+  #pdf-report-content, #pdf-report-content *,
+  #pdf-detailed-analysis-content, #pdf-detailed-analysis-content * {
+    visibility: visible;
+  }
+  #pdf-report-content,
+  #pdf-detailed-analysis-content {
+    position: absolute !important;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  #pdf-report-content .glass, #pdf-report-content .surface,
+  #pdf-detailed-analysis-content .glass, #pdf-detailed-analysis-content .surface {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  #pdf-report-content .clinical-report-header-details,
+  #pdf-detailed-analysis-content .clinical-report-header-details {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  #pdf-report-content .clinical-report-header, #pdf-report-content .clinical-section, #pdf-report-content .surface,
+  #pdf-detailed-analysis-content .clinical-report-header, #pdf-detailed-analysis-content .clinical-section, #pdf-detailed-analysis-content .surface {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #pdf-report-content img, #pdf-detailed-analysis-content img { max-width: 100% !important; height: auto !important; border: 1px solid #e2e8f0; }
+  #pdf-report-content .compare-slider-wrap { max-width: 100% !important; }
+  #pdf-report-content .report-print-footer, #pdf-detailed-analysis-content .report-print-footer { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Compact spacing so each report — every section intact — fits its intended
+     page budget instead of sprawling. Nothing is hidden here; only the
+     padding/gaps/text sizes shrink. */
+  #pdf-report-content.space-y-6 > * + *, #pdf-report-content > * + *,
+  #pdf-detailed-analysis-content.space-y-5 > * + *, #pdf-detailed-analysis-content > * + * {
+    margin-top: 6px !important;
+  }
+  #pdf-report-content .p-6, #pdf-detailed-analysis-content .p-6 { padding: 10px !important; }
+  #pdf-report-content .p-5, #pdf-detailed-analysis-content .p-5 { padding: 8px !important; }
+  #pdf-report-content .p-4, #pdf-detailed-analysis-content .p-4 { padding: 6px !important; }
+  #pdf-report-content .mb-4, #pdf-detailed-analysis-content .mb-4 { margin-bottom: 4px !important; }
+  #pdf-report-content .mb-3, #pdf-detailed-analysis-content .mb-3 { margin-bottom: 4px !important; }
+  #pdf-report-content .mb-1, #pdf-detailed-analysis-content .mb-1 { margin-bottom: 3px !important; }
+  #pdf-report-content .mt-5, #pdf-detailed-analysis-content .mt-5 { margin-top: 6px !important; }
+  #pdf-report-content .gap-4, #pdf-detailed-analysis-content .gap-4 { gap: 6px !important; }
+  #pdf-report-content .gap-5, #pdf-detailed-analysis-content .gap-5 { gap: 6px !important; }
+  #pdf-report-content .gap-6, #pdf-detailed-analysis-content .gap-6 { gap: 6px !important; }
+  #pdf-report-content .text-sm, #pdf-detailed-analysis-content .text-sm { font-size: 10px !important; line-height: 1.3 !important; }
+  #pdf-report-content .text-xs, #pdf-detailed-analysis-content .text-xs { font-size: 8.5px !important; line-height: 1.25 !important; }
+  #pdf-report-content .text-3xl, #pdf-detailed-analysis-content .text-3xl { font-size: 19px !important; }
+  #pdf-report-content .text-2xl, #pdf-detailed-analysis-content .text-2xl { font-size: 14px !important; }
+  #pdf-report-content .text-xl, #pdf-detailed-analysis-content .text-xl { font-size: 12px !important; }
+  #pdf-report-content td, #pdf-report-content th, #pdf-detailed-analysis-content td, #pdf-detailed-analysis-content th { line-height: 1.3 !important; }
+  #pdf-report-content .image-output-grid .px-3.py-2, #pdf-detailed-analysis-content .image-output-grid .px-3.py-2 { padding: 3px 8px !important; }
+
+  /* Section headings: a rectangular colored strip carrying the heading name —
+     the classic lab-report banner style — instead of a plain icon+text line. */
+  #pdf-report-content h3, #pdf-detailed-analysis-content h3 {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    background: #0891b2 !important;
+    color: #ffffff !important;
+    padding: 6px 10px !important;
+    border-radius: 3px !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.03em !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #pdf-report-content h3 svg, #pdf-detailed-analysis-content h3 svg { color: #ffffff !important; }
+  #pdf-detailed-analysis-content h2 { font-size: 16px !important; }
+
+  button, .no-print { display: none !important; }
+
+  #pdf-report-content .pdf-confidence-ring { display: none !important; }
+  #pdf-report-content .pdf-risk-ring, #pdf-report-content .pdf-risk-ring svg { width: 42px !important; height: 42px !important; }
+  #pdf-report-content .w-12 { width: 26px !important; }
+  #pdf-report-content .h-12 { height: 26px !important; }
+  #pdf-report-content .h-3 { height: 5px !important; }
+
+  #pdf-report-content .pdf-biomarker-grid, #pdf-report-content .pdf-lesion-grid,
+  #pdf-detailed-analysis-content .pdf-biomarker-grid, #pdf-detailed-analysis-content .pdf-lesion-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 2px 14px !important;
+  }
+  #pdf-report-content .biomarker-card, #pdf-detailed-analysis-content .biomarker-card {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: baseline !important;
+    justify-content: space-between !important;
+    gap: 2px 8px !important;
+    padding: 2px 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-radius: 0 !important;
+    break-inside: avoid;
+  }
+  #pdf-report-content .biomarker-icon, #pdf-report-content .biomarker-rangebar,
+  #pdf-detailed-analysis-content .biomarker-icon, #pdf-detailed-analysis-content .biomarker-rangebar {
+    display: none !important;
+  }
+  #pdf-report-content .biomarker-card .text-2xl, #pdf-detailed-analysis-content .biomarker-card .text-2xl { font-size: 11px !important; }
+  #pdf-report-content .biomarker-status, #pdf-detailed-analysis-content .biomarker-status {
+    padding: 0 !important;
+    background: none !important;
+    font-size: 9px !important;
+    margin-left: 6px !important;
+  }
+  #pdf-report-content .biomarker-range-caption, #pdf-detailed-analysis-content .biomarker-range-caption {
+    display: inline !important;
+    font-size: 9px !important;
+    margin: 0 0 0 4px !important;
+    white-space: nowrap !important;
+  }
+
+  #pdf-report-content .lesion-stat-box, #pdf-detailed-analysis-content .lesion-stat-box {
+    display: flex !important;
+    align-items: baseline !important;
+    justify-content: space-between !important;
+    text-align: left !important;
+    padding: 2px 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-radius: 0 !important;
+  }
+  #pdf-report-content .lesion-stat-box p:first-child, #pdf-detailed-analysis-content .lesion-stat-box p:first-child { order: 2; }
+  #pdf-report-content .lesion-stat-box p:last-child, #pdf-detailed-analysis-content .lesion-stat-box p:last-child { order: 1; }
+  #pdf-report-content .lesion-stat-box .text-2xl, #pdf-detailed-analysis-content .lesion-stat-box .text-2xl { font-size: 11px !important; }
+
+  #pdf-detailed-analysis-content .pdf-images-page { break-before: page; page-break-before: always; }
+  #pdf-report-content .pdf-tests-images-group { break-inside: avoid; page-break-inside: avoid; }
+  /* CSS Grid rows don't fragment reliably across a print page break in Chromium — when
+     the images page doesn't fit cleanly, grid can render the next row overlapping the
+     one above it. Flexbox with wrap handles print pagination correctly, so the image
+     cards use flex here (still a 2-column layout via each card's flex-basis) with
+     break-inside: avoid on each card so a card is always moved whole, never split. */
+  #pdf-report-content .pdf-images-page .image-output-grid, #pdf-detailed-analysis-content .pdf-images-page .image-output-grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6mm !important;
+    margin-top: 10mm !important;
+  }
+  #pdf-report-content .pdf-images-page .image-output-grid > *, #pdf-detailed-analysis-content .pdf-images-page .image-output-grid > * {
+    flex: 0 0 calc(50% - 3mm) !important;
+    max-width: calc(50% - 3mm) !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  #pdf-report-content .pdf-images-page .image-output-grid img, #pdf-detailed-analysis-content .pdf-images-page .image-output-grid img {
+    height: 175px !important;
+    object-fit: cover !important;
+    width: 100% !important;
+  }
+
+  #pdf-report-content .pdf-suggested-tests { margin-bottom: 2px !important; }
+  #pdf-report-content .pdf-suggested-tests span { padding: 2px 8px !important; }
+
+  #pdf-detailed-analysis-content .pdf-summary-page { break-before: page; page-break-before: always; }
+
+  /* Detailed Analysis has noticeably less content than the screening report but is
+     spread across the same page budget, so it needs the opposite treatment — sizing
+     scaled UP rather than compacted, so each page reads as a full, deliberately laid-out
+     page rather than a compact report with empty space trailing at the bottom. */
+  #pdf-detailed-analysis-content.space-y-5 > * + *,
+  #pdf-detailed-analysis-content > * + * {
+    margin-top: 14px !important;
+  }
+  #pdf-detailed-analysis-content .p-6 { padding: 18px !important; }
+  #pdf-detailed-analysis-content .p-5 { padding: 14px !important; }
+  #pdf-detailed-analysis-content .p-4 { padding: 12px !important; }
+  #pdf-detailed-analysis-content .mb-4 { margin-bottom: 8px !important; }
+  #pdf-detailed-analysis-content .mb-3 { margin-bottom: 8px !important; }
+  #pdf-detailed-analysis-content .mb-1 { margin-bottom: 5px !important; }
+  #pdf-detailed-analysis-content .mt-5 { margin-top: 12px !important; }
+  #pdf-detailed-analysis-content .gap-4 { gap: 12px !important; }
+  #pdf-detailed-analysis-content .gap-5 { gap: 12px !important; }
+  #pdf-detailed-analysis-content .gap-6 { gap: 12px !important; }
+  #pdf-detailed-analysis-content .text-sm { font-size: 12.5px !important; line-height: 1.55 !important; }
+  #pdf-detailed-analysis-content .text-xs { font-size: 10.5px !important; line-height: 1.4 !important; }
+  #pdf-detailed-analysis-content .text-2xl { font-size: 18px !important; }
+  #pdf-detailed-analysis-content .text-xl { font-size: 15px !important; }
+  #pdf-detailed-analysis-content h3 { font-size: 12.5px !important; padding: 8px 12px !important; }
+  #pdf-detailed-analysis-content h2 { font-size: 19px !important; }
+  #pdf-detailed-analysis-content .biomarker-card { padding: 6px 0 !important; }
+  #pdf-detailed-analysis-content .biomarker-card .text-2xl { font-size: 14px !important; }
+  #pdf-detailed-analysis-content .lesion-stat-box { padding: 8px 0 !important; }
+  #pdf-detailed-analysis-content .lesion-stat-box .text-2xl { font-size: 15px !important; }
+  #pdf-detailed-analysis-content .pdf-biomarker-grid,
+  #pdf-detailed-analysis-content .pdf-lesion-grid {
+    gap: 6px 20px !important;
+  }
+  #pdf-detailed-analysis-content .pdf-images-page .image-output-grid { gap: 10mm !important; }
+  #pdf-detailed-analysis-content .pdf-images-page .image-output-grid > * {
+    flex-basis: calc(50% - 5mm) !important;
+    max-width: calc(50% - 5mm) !important;
+  }
+  #pdf-detailed-analysis-content .pdf-images-page .image-output-grid img { height: 280px !important; }
+}
