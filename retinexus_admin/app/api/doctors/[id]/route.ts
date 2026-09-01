@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { hash } from 'bcryptjs';
 import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/auth/requireAdmin';
-import { deleteFirebaseUser } from '@/lib/firebaseAdmin';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdmin();
@@ -132,13 +131,23 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
   // Neon is deleted regardless (it's the source of truth) — the Firebase identity is
   // best-effort cleanup on top, since deleting it requires the Admin SDK/service account.
+  // Imported dynamically (not at module top-level) so GET/PATCH on this route never pull
+  // in firebase-admin — it has a known Vercel bundling issue ("Failed to load external
+  // module firebase-admin-...") that otherwise broke every method in this file, not just
+  // delete, since a static top-level import loads for the whole module regardless of
+  // which handler runs.
   let firebaseWarning: string | undefined;
   if (existing.firebaseUid) {
-    const result = await deleteFirebaseUser(existing.firebaseUid);
-    if (result.status === 'skipped_not_configured') {
-      firebaseWarning = `${existing.name}'s account was removed, but their Firebase sign-in identity was NOT deleted because the Firebase Admin service account isn't configured yet. Remove it manually in the Firebase Console (Authentication → Users) if needed.`;
-    } else if (result.status === 'error') {
-      firebaseWarning = `${existing.name}'s account was removed, but deleting their Firebase sign-in identity failed: ${result.message}. You may need to remove it manually in the Firebase Console.`;
+    try {
+      const { deleteFirebaseUser } = await import('@/lib/firebaseAdmin');
+      const result = await deleteFirebaseUser(existing.firebaseUid);
+      if (result.status === 'skipped_not_configured') {
+        firebaseWarning = `${existing.name}'s account was removed, but their Firebase sign-in identity was NOT deleted because the Firebase Admin service account isn't configured yet. Remove it manually in the Firebase Console (Authentication → Users) if needed.`;
+      } else if (result.status === 'error') {
+        firebaseWarning = `${existing.name}'s account was removed, but deleting their Firebase sign-in identity failed: ${result.message}. You may need to remove it manually in the Firebase Console.`;
+      }
+    } catch (err) {
+      firebaseWarning = `${existing.name}'s account was removed, but deleting their Firebase sign-in identity failed: ${err instanceof Error ? err.message : 'Unknown error'}. You may need to remove it manually in the Firebase Console.`;
     }
   }
 
