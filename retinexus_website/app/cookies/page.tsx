@@ -4,7 +4,7 @@ import PageHero from '@/components/ui/PageHero';
 import LegalContent from '@/components/ui/LegalContent';
 import Footer from '@/components/Footer';
 
-export const metadata: Metadata = { title: 'Cookies Policy | Retinexus AI' };
+export const metadata: Metadata = { title: 'Cookies Policy | RetiNexus AI' };
 
 export default function CookiesPage() {
   return (

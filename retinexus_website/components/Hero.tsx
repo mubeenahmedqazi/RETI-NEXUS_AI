@@ -70,7 +70,7 @@ export default function Hero() {
                 <span className="block text-gradient-brand">A window into whole-body risk.</span>
               </h1>
               <p className="mt-6 text-lg max-w-xl leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
-                Retinexus AI reads the retina&apos;s microvasculature to screen for diabetic retinopathy
+                RetiNexus AI reads the retina&apos;s microvasculature to screen for diabetic retinopathy
                 and early signals of cardiac &amp; renal risk  instantly, non-invasively, from a single fundus photograph.
               </p>
 

@@ -5,7 +5,7 @@ import Pipeline from '@/components/Pipeline';
 import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'How It Works | Retinexus AI',
+  title: 'How It Works | RetiNexus AI',
   description:
     'The five-stage AI pipeline that turns a raw fundus photograph into a graded, explainable clinical report.',
 };

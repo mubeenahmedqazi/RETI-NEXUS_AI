@@ -4,7 +4,7 @@ import PageHero from '@/components/ui/PageHero';
 import LegalContent from '@/components/ui/LegalContent';
 import Footer from '@/components/Footer';
 
-export const metadata: Metadata = { title: 'Privacy Policy | Retinexus AI' };
+export const metadata: Metadata = { title: 'Privacy Policy | RetiNexus AI' };
 
 export default function PrivacyPage() {
   return (
@@ -17,7 +17,7 @@ export default function PrivacyPage() {
       />
       <LegalContent updated="August 2026">
         <p>
-          Retinexus AI is a final year academic project. This page covers both this presentation site and the
+          RetiNexus AI is a final year academic project. This page covers both this presentation site and the
           clinical portal it links to.
         </p>
 

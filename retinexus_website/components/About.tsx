@@ -33,7 +33,7 @@ export default function About() {
               photograph, it acts as a non-invasive window into that same systemic vascular damage.
             </p>
             <p className="mt-4 leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
-              Retinexus AI is built on that idea: instead of requiring expensive, invasive baseline cardiac or
+              RetiNexus AI is built on that idea: instead of requiring expensive, invasive baseline cardiac or
               renal work-ups, a single retinal scan can surface early diabetic retinopathy findings alongside
               early-warning signals for cardiovascular and kidney risk, putting a meaningful first screen within
               reach of any clinic with a fundus camera.
@@ -104,7 +104,7 @@ export default function About() {
               Most screening tools ask a patient to give something up: blood, time, money, or a trip to a
               specialist clinic. A fundus photograph asks for none of that. It takes seconds, it&apos;s painless,
               and the same image a doctor uses to check for diabetic retinopathy already contains the vascular
-              detail an AI model needs to flag broader systemic risk. We built Retinexus AI to make that second
+              detail an AI model needs to flag broader systemic risk. We built RetiNexus AI to make that second
               read automatic, so a routine eye scan can quietly do more work for the patient than it ever did
               before.
             </p>

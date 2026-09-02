@@ -13,7 +13,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'RetiNexus AI | Home',
   description:
-    'Retinexus AI reads retinal microvasculature to screen for diabetic retinopathy and early cardiac & renal risk, non-invasively, from a single fundus photograph.',
+    'RetiNexus AI reads retinal microvasculature to screen for diabetic retinopathy and early cardiac & renal risk, non-invasively, from a single fundus photograph.',
 };
 
 export const viewport: Viewport = {

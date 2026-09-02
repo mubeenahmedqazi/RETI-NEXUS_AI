@@ -17,7 +17,7 @@ export default function Footer() {
 
       <div className="border-t py-6 flex flex-col items-center gap-3 text-center" style={{ borderColor: 'var(--border)' }}>
         <p className="text-xs" style={{ color: 'var(--subtle-foreground)' }}>
-          © {new Date().getFullYear()} Retinexus AI, Final Year Project, COMSATS University Islamabad, Lahore Campus. For research & educational use.
+          © {new Date().getFullYear()} RetiNexus AI, Final Year Project, COMSATS University Islamabad, Lahore Campus. For research & educational use.
         </p>
         <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--subtle-foreground)' }}>
           <Link href="/privacy" className="hover:text-[var(--brand-secondary)] hover:underline underline-offset-4 transition-colors duration-300">Privacy</Link>

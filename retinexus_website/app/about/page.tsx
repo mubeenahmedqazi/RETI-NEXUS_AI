@@ -5,9 +5,9 @@ import About from '@/components/About';
 import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'About | Retinexus AI',
+  title: 'About | RetiNexus AI',
   description:
-    'Why Retinexus AI screens for diabetic retinopathy and multi-organ risk from a single retinal photograph.',
+    'Why RetiNexus AI screens for diabetic retinopathy and multi-organ risk from a single retinal photograph.',
 };
 
 export default function AboutPage() {

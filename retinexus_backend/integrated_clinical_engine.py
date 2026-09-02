@@ -125,11 +125,16 @@ class RetiNexusFullPipeline:
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         if base_path is None:
-            self.base_path = os.path.abspath(r"C:\Users\Hp\OneDrive\Desktop\RetiNexus_AI")
+            # trained_weights/ always sits directly beside this file — both in a local dev
+            # checkout and inside the Docker image the HF Space builds (Dockerfile COPYs the
+            # whole retinexus_backend/ folder to /app, so the same relationship holds there
+            # too). Deriving it this way (instead of a hardcoded machine-specific path) works
+            # on any host, not just the original dev machine.
+            self.base_path = os.path.dirname(os.path.abspath(__file__))
         else:
             self.base_path = os.path.abspath(base_path)
 
-        self.weights_dir = os.path.join(self.base_path, 'retinexus_backend', 'trained_weights')
+        self.weights_dir = os.path.join(self.base_path, 'trained_weights')
 
         print("="*75)
         print("[+] RETINEXUS INTEGRATED CLINICAL ENGINE ONLINE (MAX-CONFIDENCE & RISK NET)")

@@ -30,6 +30,9 @@ api.upload_folder(
         "upload_to_hf.py",
         "upload_space.py",
         "157_right.jpeg",
+        "trained_weights/*",
+        ".venv-longitudinal/*",
+        "**/.venv-longitudinal/*",
     ],
 )
 

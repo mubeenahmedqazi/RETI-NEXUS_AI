@@ -59,7 +59,7 @@ export default function Pipeline() {
             <div className="relative overflow-hidden border border-slate-200/80 dark:border-white/10 shadow-2xl">
               <img
                 src="/process-image-optimized.webp"
-                alt="Retinal image moving through the Retinexus AI analysis pipeline"
+                alt="Retinal image moving through the RetiNexus AI analysis pipeline"
                 className="w-full h-full object-cover aspect-[16/10]"
               />
             </div>

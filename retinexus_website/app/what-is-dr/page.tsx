@@ -6,7 +6,7 @@ import DiabetesDeepDive from '@/components/DiabetesDeepDive';
 import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'What is Diabetic Retinopathy? | Retinexus AI',
+  title: 'What is Diabetic Retinopathy? | RetiNexus AI',
   description:
     'Diabetic retinopathy explained in depth: the global diabetes epidemic, why Pakistan has the world\'s highest prevalence rate, the five DR stages, and how diabetes damages the heart, kidneys and brain over time.',
 };

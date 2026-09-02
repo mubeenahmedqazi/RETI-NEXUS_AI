@@ -41,10 +41,18 @@ def ensure_model_weight(filename: str, local_dir: str = "trained_weights") -> st
             print(f"[-] Failed to download '{filename}' from Hugging Face: {err}")
     return local_path
 
-# Verify or download required weight files on initialization
+# Verify or download required weight files on initialization — every file
+# integrated_clinical_engine.py actually loads from trained_weights/. Populating this
+# means a fresh deployment (e.g. a Hugging Face Space) never needs the weight files
+# pushed into its own repo — they're pulled from HF_REPO_ID on first startup instead,
+# and cached in trained_weights/ for every request after that.
 REQUIRED_WEIGHTS = [
-    # Add any model filenames stored in your Hugging Face repo here
-    # e.g., "densenet121.pth", "yolov8_lesion.pt", "unet_segmentation.pth"
+    "dr_clf_effnet.pth",
+    "densenet121.pth",
+    "dr_clf_resnet.pth",
+    "vessel_unet_model.pth",
+    "yolo_new.pt",
+    "risk_multi_head.pth",
 ]
 
 for weight_file in REQUIRED_WEIGHTS:
@@ -71,13 +79,19 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000", 
-        "http://127.0.0.1:3000", 
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
         "http://localhost:3001",
         "http://127.0.0.1:3001",
         "http://localhost:3002",
         "http://127.0.0.1:3002",
+        "https://reti-nexus-ai-portal.vercel.app",
+        "https://reti-nexus-ai-admin.vercel.app",
     ],
+    # Vercel preview deployments get a random subdomain per branch/PR (e.g.
+    # reti-nexus-ai-portal-git-main-<user>.vercel.app) — matching the pattern here
+    # covers those automatically instead of needing an allow_origins entry per preview.
+    allow_origin_regex=r"https://reti-nexus-ai-(portal|admin).*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
