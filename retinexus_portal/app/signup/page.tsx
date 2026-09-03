@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { createUserWithEmailAndPassword, signInWithPopup, AuthError } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification, signInWithPopup, AuthError } from 'firebase/auth';
 import { Eye, EyeOff, Mail, Lock, User, Hospital, Phone, UserPlus, Stethoscope } from 'lucide-react';
 import AuthShell from '@/components/Common/AuthShell';
 import { FormField } from '@/components/ui/FormField';
@@ -49,6 +49,11 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  // Set only for the password sign-up path — Firebase requires a signed-in user to
+  // (re)send the verification email to, and `createUserWithEmailAndPassword` already
+  // signs the new user in, so `auth.currentUser` is who we resend to.
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
+  const [resent, setResent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,8 +74,24 @@ export default function SignupPage() {
 
     try {
       const credential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      const idToken = await credential.user.getIdToken();
-      await registerFirebaseDoctor(idToken);
+      await sendEmailVerification(credential.user);
+      // Deliberately not calling registerFirebaseDoctor here — the account itself isn't
+      // created until they verify (see /api/auth/firebase's email_verified gate) and
+      // come back to sign in, which is when a fresh, verified ID token gets issued.
+      setAwaitingVerification(true);
+    } catch (err) {
+      setError(friendlyFirebaseError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!auth.currentUser) return;
+    setLoading(true);
+    try {
+      await sendEmailVerification(auth.currentUser);
+      setResent(true);
     } catch (err) {
       setError(friendlyFirebaseError(err));
     } finally {
@@ -120,6 +141,41 @@ export default function SignupPage() {
       setLoading(false);
     }
   };
+
+  if (awaitingVerification) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-4">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center max-w-md">
+          <div className="w-20 h-20 mx-auto rounded-full bg-[var(--brand-secondary)]/15 border-2 border-[var(--brand-secondary)]/40 flex items-center justify-center mb-6">
+            <Mail className="w-10 h-10 text-[var(--brand-secondary)]" />
+          </div>
+          <h2 className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>Verify your email</h2>
+          <p className="mt-2 mb-6" style={{ color: 'var(--muted-foreground)' }}>
+            We sent a verification link to <strong>{formData.email}</strong>. Click it, then come back and sign in —
+            your account is created the moment you sign in with a verified email.
+          </p>
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/25 text-red-500 rounded-lg p-3 text-sm mb-4 text-left">{error}</div>
+          )}
+          {resent ? (
+            <p className="text-sm mb-4" style={{ color: 'var(--brand-secondary)' }}>Verification email resent — check your inbox.</p>
+          ) : (
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={loading}
+              className="text-sm text-[var(--brand-secondary)] font-medium hover:underline disabled:opacity-50 mb-4"
+            >
+              Didn&apos;t get it? Resend verification email
+            </button>
+          )}
+          <div>
+            <Link href="/login" className="text-sm text-[var(--muted-foreground)] hover:underline">Back to sign in</Link>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (success) {
     return (

@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     const email = payload.email as string | undefined;
+    const emailVerified = payload.email_verified as boolean | undefined;
     const uid = payload.sub as string;
 
     if (!email) {
@@ -50,6 +51,23 @@ export async function POST(request: NextRequest) {
     }
 
     let doctor = await prisma.user.findUnique({ where: { email } });
+
+    // Gate only the moment a Firebase identity is first established for this email — a
+    // brand-new signup, or an existing pre-Firebase doctor linking Firebase for the first
+    // time — not every subsequent login. Doctors approved before this check existed may
+    // never have verified their Firebase email (it wasn't enforced yet); re-checking on
+    // every sign-in would retroactively lock out already-approved doctors. Google's own
+    // OAuth flow already guarantees a verified email, so this never blocks that path.
+    const isEstablishingIdentity = !doctor || !doctor.firebaseUid;
+    if (isEstablishingIdentity && !emailVerified) {
+      return NextResponse.json(
+        {
+          error: 'Please verify your email address first — check your inbox for the verification link we sent.',
+          emailNotVerified: true,
+        },
+        { status: 403 }
+      );
+    }
 
     if (!doctor) {
       doctor = await prisma.user.create({

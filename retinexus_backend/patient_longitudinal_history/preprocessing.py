@@ -101,9 +101,15 @@ def _fetch_detailed_analyses(cur, patient_id: str) -> List[Dict[str, Any]]:
 def get_patient_last_3_reports(phone_number: str, patient_id: Optional[str] = None) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
     """Resolves the phone number to a patient account (disambiguated by `patient_id`
     when the frontend already had the user pick one — see main.py), then returns that
-    patient plus their last 3 reports, newest first, mixed across Screening and
+    patient plus their last 3 reports, oldest first, mixed across Screening and
     Detailed Analysis (matching the same "last 3 mixed" convention the portal's own
     Longitudinal Tracking History feature already uses).
+
+    Selection itself still needs newest-first + a limit to pick the *most recent* 3 out
+    of however many the patient has — but the list this returns is reversed back to
+    chronological (oldest -> newest) before going out, since every downstream consumer
+    (raw_reports_json in the LLM prompt, the trend computation) reads this as a
+    narrative: "previous" reports should appear before the "current" one, not after.
 
     Raises NoReportsFoundError if the phone matches no patient, or the matched patient
     has no reports at all.
@@ -129,6 +135,7 @@ def get_patient_last_3_reports(phone_number: str, patient_id: Optional[str] = No
 
     combined.sort(key=lambda r: r["createdAt"], reverse=True)
     last_3 = combined[:3]
+    last_3.reverse()  # newest-first (for selection) -> oldest-first (for the narrative)
     return patient, last_3
 
 

@@ -4,7 +4,7 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { signInWithEmailAndPassword, signInWithPopup, AuthError } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendEmailVerification, signInWithPopup, AuthError } from 'firebase/auth';
 import { Eye, EyeOff, Mail, Lock, LogIn, User, Stethoscope, UserCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import AuthShell from '@/components/Common/AuthShell';
 import { FormField } from '@/components/ui/FormField';
@@ -54,6 +54,11 @@ function LoginPageContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Firebase sign-in itself succeeds even with an unverified email (only our own server
+  // gate in /api/auth/firebase blocks it) — so on that specific rejection, auth.currentUser
+  // is already the signed-in-but-unverified user, and we can offer to resend right here.
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resent, setResent] = useState(false);
 
   // Doctor flow — unchanged, single-step email + password
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -70,6 +75,8 @@ function LoginPageContent() {
   const selectRole = (r: 'doctor' | 'patient') => {
     setRole(r);
     setError('');
+    setNeedsVerification(false);
+    setResent(false);
     setPatientStep('phone');
     setProfiles([]);
     setSelectedProfile(null);
@@ -97,6 +104,20 @@ function LoginPageContent() {
       finishLogin(data);
     } else {
       setError(data.error || 'Invalid credentials');
+      setNeedsVerification(Boolean(data.emailNotVerified));
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!auth.currentUser) return;
+    setLoading(true);
+    try {
+      await sendEmailVerification(auth.currentUser);
+      setResent(true);
+    } catch (err) {
+      setError(friendlyFirebaseError(err));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -104,6 +125,8 @@ function LoginPageContent() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setNeedsVerification(false);
+    setResent(false);
     try {
       const credential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
       const idToken = await credential.user.getIdToken();
@@ -118,6 +141,8 @@ function LoginPageContent() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setError('');
+    setNeedsVerification(false);
+    setResent(false);
     try {
       const credential = await signInWithPopup(auth, googleProvider);
       const idToken = await credential.user.getIdToken();
@@ -230,6 +255,22 @@ function LoginPageContent() {
           className="bg-red-500/10 border border-red-500/25 text-red-500 rounded-lg p-3 text-sm mb-6"
         >
           {error}
+          {needsVerification && (
+            <div className="mt-2">
+              {resent ? (
+                <span className="text-[var(--brand-secondary)]">Verification email resent — check your inbox.</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={loading}
+                  className="text-[var(--brand-secondary)] font-medium hover:underline disabled:opacity-50"
+                >
+                  Resend verification email
+                </button>
+              )}
+            </div>
+          )}
         </motion.div>
       )}
 
