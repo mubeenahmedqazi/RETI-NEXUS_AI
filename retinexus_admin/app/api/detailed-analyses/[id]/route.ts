@@ -12,6 +12,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     where: { id },
     select: {
       id: true,
+      reportCode: true,
       patientId: true,
       testName: true,
       clinicalSummary: true,
@@ -26,7 +27,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       // reportData supplies the Biomarker Dashboard / Lesion Detection / Output Images /
       // Predicted Risk sections — same "correlated against the screening report" content
       // the portal's DetailedAnalysisReport shows.
-      report: { select: { id: true, reportNumber: true, reportData: true } },
+      report: { select: { id: true, reportNumber: true, reportCode: true, reportData: true } },
     },
   });
 

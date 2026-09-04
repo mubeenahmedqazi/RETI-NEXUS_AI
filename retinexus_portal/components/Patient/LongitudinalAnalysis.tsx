@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { TrendingUp, TrendingDown, Minus, GitBranch, Heart, Bean, Brain, Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
+import { Heart, Bean, Brain, RefreshCw, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { generateLongitudinalAnalysis } from '@/services/api';
 import { LongitudinalAnalysis as LongitudinalAnalysisData, LongitudinalVisit } from '@/types/report';
@@ -29,19 +29,17 @@ interface RawReport {
 interface LongitudinalAnalysisProps {
   /** Reports for one patient, newest-first (matches the shape returned by /api/patients/[id]). */
   reports: RawReport[];
+  /** Suppresses the trailing Recommendation block — for callers that render it themselves
+   * elsewhere on the page (via onRecommendation below) instead of at the end of this card. */
+  hideRecommendation?: boolean;
+  /** Fires whenever the generated analysis's recommendation text changes (including to
+   * null, on reset/regenerate) — lets a parent page render it in a different position. */
+  onRecommendation?: (text: string | null) => void;
 }
-
-const TREND_META: Record<LongitudinalAnalysisData['overallTrend'], { label: string; color: string; icon: typeof TrendingUp }> = {
-  improving: { label: 'Improving', color: '#10b981', icon: TrendingUp },
-  stable: { label: 'Stable', color: 'var(--brand-secondary)', icon: Minus },
-  worsening: { label: 'Worsening', color: '#ef4444', icon: TrendingDown },
-  mixed: { label: 'Mixed', color: '#f59e0b', icon: GitBranch },
-};
-
 
 /** Doctor-facing panel comparing DR grade and organ-risk trend across a patient's visit
  * history, with an LLM-generated narrative. Renders nothing when fewer than 2 visits exist. */
-export default function LongitudinalAnalysis({ reports }: LongitudinalAnalysisProps) {
+export default function LongitudinalAnalysis({ reports, hideRecommendation = false, onRecommendation }: LongitudinalAnalysisProps) {
   const [analysis, setAnalysis] = useState<LongitudinalAnalysisData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,10 +85,12 @@ export default function LongitudinalAnalysis({ reports }: LongitudinalAnalysisPr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reports.map((r) => r.id).join(',')]);
 
-  if (chronological.length < 2) return null;
+  useEffect(() => {
+    onRecommendation?.(analysis?.recommendation || null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [analysis]);
 
-  const trendMeta = analysis ? TREND_META[analysis.overallTrend] : null;
-  const TrendIcon = trendMeta?.icon || Minus;
+  if (chronological.length < 2) return null;
 
   const organRows = analysis
     ? [
@@ -108,20 +108,10 @@ export default function LongitudinalAnalysis({ reports }: LongitudinalAnalysisPr
       className="surface rounded-2xl p-6"
     >
       <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
-        <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
-          <Sparkles className="w-5 h-5 text-[var(--brand-secondary)]" />
+        <h2 className="text-lg font-semibold" style={{ color: 'var(--foreground)' }}>
           Longitudinal Trend Analysis
         </h2>
         <div className="flex items-center gap-2">
-          {trendMeta && (
-            <span
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
-              style={{ background: `${trendMeta.color}1a`, color: trendMeta.color }}
-            >
-              <TrendIcon className="w-3.5 h-3.5" />
-              {trendMeta.label}
-            </span>
-          )}
           <button
             onClick={runAnalysis}
             disabled={loading}
@@ -236,7 +226,7 @@ export default function LongitudinalAnalysis({ reports }: LongitudinalAnalysisPr
             </div>
           )}
 
-          {analysis.recommendation && (
+          {!hideRecommendation && analysis.recommendation && (
             <div
               className="rounded-xl p-4 border"
               style={{

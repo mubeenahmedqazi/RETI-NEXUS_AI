@@ -13,6 +13,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     select: {
       id: true,
       reportNumber: true,
+      reportCode: true,
       patientId: true,
       patientName: true,
       drGrade: true,

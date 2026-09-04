@@ -22,7 +22,6 @@ import { Swirling } from '@/components/ui/Swirling';
 import ClinicalReportHeader from '@/components/ui/ClinicalReportHeader';
 import ReportDisplay from '@/components/Dashboard/ReportDisplay';
 import DetailedAnalysisReport from '@/components/Dashboard/DetailedAnalysisReport';
-import LongitudinalAnalysis from '@/components/Patient/LongitudinalAnalysis';
 import { submitDetailedTestAnalysis, generateLongitudinalAnalysis, API_BASE_URL } from '@/services/api';
 import {
   DetailedAnalysisContext,
@@ -79,6 +78,7 @@ export default function DetailedAnalysisPage() {
   const [error, setError] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
   const [approved, setApproved] = useState(false);
+  const [savedReportCode, setSavedReportCode] = useState<string | null>(null);
   const [viewingReport, setViewingReport] = useState<any | null>(null);
   const [viewingDetailedAnalysis, setViewingDetailedAnalysis] = useState<any | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -227,6 +227,7 @@ export default function DetailedAnalysisPage() {
     setResult(null);
     setError(null);
     setApproved(false);
+    setSavedReportCode(null);
   };
 
   const handleApprove = async () => {
@@ -256,6 +257,7 @@ export default function DetailedAnalysisPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to save detailed analysis');
       setApproved(true);
+      setSavedReportCode(data.analysis?.reportCode || null);
       toast.success('Detailed analysis approved and saved to patient records!', { position: 'top-right', autoClose: 4000 });
     } catch (e: any) {
       toast.error(e.message || 'Failed to save detailed analysis.', { position: 'top-right', autoClose: 5000 });
@@ -303,13 +305,6 @@ export default function DetailedAnalysisPage() {
           description={`Upload ${selectedTest || 'the suggested follow-up test'} for ${context.patientName} — it's read automatically and correlated against their retinal screening findings.`}
         />
       </div>
-
-      {/* Longitudinal Trend Analysis — lives here only, not on the plain screening report view */}
-      {allReports.length >= 2 && (
-        <div className="no-print">
-          <LongitudinalAnalysis reports={allReports} />
-        </div>
-      )}
 
       <div className="grid lg:grid-cols-[340px_1fr] gap-6 items-start">
         {/* ── LEFT: screening context (screen only — not part of the exported report) ── */}
@@ -498,7 +493,7 @@ export default function DetailedAnalysisPage() {
 
               <Button
                 variant="primary"
-                icon={analyzing ? <Swirling className="w-4 h-4" style={{ color: 'var(--brand-secondary)' }} /> : <Sparkles className="w-4 h-4" />}
+                icon={analyzing ? <Swirling className="w-4 h-4" style={{ color: 'var(--brand-secondary)' }} /> : null}
                 disabled={!file || analyzing}
                 onClick={runAnalysis}
                 className="w-full"
@@ -513,7 +508,7 @@ export default function DetailedAnalysisPage() {
               result={result}
               testName={selectedTest}
               analyzedAt={analyzedAt}
-              reportIdLabel={`DA-${patientId.slice(-8).toUpperCase()}`}
+              reportIdLabel={savedReportCode || 'Pending — Not Yet Saved'}
               patientName={context.patientName}
               patientAge={context.patientAge}
               patientGender={context.patientGender}
@@ -565,6 +560,7 @@ export default function DetailedAnalysisPage() {
                   patientAge={context.patientAge}
                   patientGender={context.patientGender}
                   reportNumber={viewingReport.reportNumber}
+                  reportCode={viewingReport.reportCode}
                 />
               </div>
             </motion.div>

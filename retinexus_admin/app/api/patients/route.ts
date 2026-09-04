@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
       age: true,
       gender: true,
       address: true,
-      diabetesLevel: true,
       doctorId: true,
       createdAt: true,
       doctor: { select: { id: true, name: true } },

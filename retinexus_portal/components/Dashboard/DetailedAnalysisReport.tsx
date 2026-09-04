@@ -228,9 +228,9 @@ export default function DetailedAnalysisReport({
               Analysis Output Images
             </h3>
             <div className="grid grid-cols-2 gap-4 image-output-grid">
-              {IMAGE_ORDER.filter((key) => reportImages?.[key]).map((key) => {
-                const filename = reportImages[key];
-                const imageUrl = getImageUrl(filename as string);
+              {IMAGE_ORDER.map((key) => {
+                const filename = reportImages?.[key];
+                const imageUrl = filename ? getImageUrl(filename as string) : null;
                 const label = IMAGE_LABELS[key] || key.replace('_', ' ');
                 if (!imageUrl) {
                   return (
@@ -256,8 +256,8 @@ export default function DetailedAnalysisReport({
                         <ZoomIn className="w-4 h-4 text-white/0 group-hover:text-white/90 transition-colors duration-300" />
                       </div>
                     </div>
-                    <div className="px-3 py-2 border-t text-center" style={{ borderColor: 'var(--border)', background: 'var(--muted)' }}>
-                      <p className="text-xs font-semibold" style={{ color: 'var(--foreground)' }}>{label}</p>
+                    <div className="px-3 py-2 border-t text-center" style={{ borderColor: '#cbd5e1', background: '#eef2f6' }}>
+                      <p className="text-xs font-semibold" style={{ color: '#0f172a' }}>{label}</p>
                     </div>
                   </motion.div>
                 );

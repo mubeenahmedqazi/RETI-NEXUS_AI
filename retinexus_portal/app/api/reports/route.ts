@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 import { uploadToCloudinary } from '@/lib/cloudinary'
 import { getReportImageUrl } from '@/lib/reportImages'
 import { API_BASE_URL } from '@/services/api'
+import { generateScreeningReportCode } from '@/lib/reportCode'
 
 // GET all reports for authenticated user (Doctor or Patient)
 export async function GET(request: NextRequest) {
@@ -225,8 +226,10 @@ export async function POST(req: NextRequest) {
     }
 
     // ✅ Create the report with the patient
+    const reportCode = await generateScreeningReportCode()
     const report = await prisma.report.create({
       data: {
+        reportCode,
         patientId: patient.id,
         patientName: patient.name,
         doctorId: docId,

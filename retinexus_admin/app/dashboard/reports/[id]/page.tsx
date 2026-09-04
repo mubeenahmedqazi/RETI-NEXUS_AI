@@ -16,6 +16,7 @@ import type { ReportData } from '@/types/report';
 interface ReportApiResponse {
   id: string;
   reportNumber: number;
+  reportCode: string | null;
   patientId: string;
   patientName: string;
   reportData: ReportData;
@@ -73,7 +74,7 @@ export default function ReportDetailPage() {
       toast.error(data.error || 'Failed to delete report');
       return;
     }
-    toast.success(`Report ${formatReportId(report.reportNumber)} deleted`);
+    toast.success(`Report ${formatReportId(report)} deleted`);
     if (data.warning) toast.warn(data.warning);
     router.push(`/dashboard/patients/${report.patientId}`);
   };
@@ -82,7 +83,7 @@ export default function ReportDetailPage() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="Admin Console"
-        title={`Report ${formatReportId(report.reportNumber)}`}
+        title={`Report ${formatReportId(report)}`}
         description={report.doctor ? `${report.patientName}, attending doctor ${report.doctor.name}` : report.patientName}
         actions={
           <>
@@ -98,7 +99,7 @@ export default function ReportDetailPage() {
 
       <AdminReportView
         report={report.reportData}
-        reportId={formatReportId(report.reportNumber)}
+        reportId={formatReportId(report)}
         patientName={report.patientName}
         patientAge={patientAge}
         patientGender={patientGender}
@@ -106,7 +107,7 @@ export default function ReportDetailPage() {
 
       {deleting && (
         <ConfirmDeleteModal
-          title={`Delete Report ${formatReportId(report.reportNumber)}?`}
+          title={`Delete Report ${formatReportId(report)}?`}
           description={`This permanently removes this screening report for ${report.patientName}. Reports with a linked detailed analysis can't be deleted until that record is removed first.`}
           onClose={() => setDeleting(false)}
           onConfirm={handleDelete}

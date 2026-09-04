@@ -25,7 +25,6 @@ export default function EditPatientModal({
     age: patient.age?.toString() || '',
     gender: patient.gender || '',
     address: patient.address || '',
-    diabetesLevel: patient.diabetesLevel || '',
     doctorId: patient.doctorId || '',
   });
   const [saving, setSaving] = useState(false);
@@ -42,7 +41,6 @@ export default function EditPatientModal({
           age: form.age ? parseInt(form.age, 10) : null,
           gender: form.gender || null,
           address: form.address || null,
-          diabetesLevel: form.diabetesLevel || null,
           doctorId: form.doctorId || null,
         }),
       });
@@ -90,7 +88,6 @@ export default function EditPatientModal({
               <FormField label="Gender" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} />
             </div>
             <FormField label="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-            <FormField label="Diabetes Level" value={form.diabetesLevel} onChange={(e) => setForm({ ...form, diabetesLevel: e.target.value })} />
             <SelectField label="Assigned Doctor" value={form.doctorId} onChange={(e) => setForm({ ...form, doctorId: e.target.value })}>
               <option value="">Self-registered (no doctor)</option>
               {doctors.map((d) => (

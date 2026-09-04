@@ -5,7 +5,6 @@ export interface Patient {
   age: number | null;
   gender: string | null;
   address: string | null;
-  diabetesLevel: string | null;
   doctorId: string | null;
   createdAt: string;
   doctor: { id: string; name: string } | null;

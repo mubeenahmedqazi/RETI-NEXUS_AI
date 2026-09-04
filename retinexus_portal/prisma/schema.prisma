@@ -52,6 +52,12 @@ model Patient {
 model Report {
   id            String   @id @default(cuid())
   reportNumber  Int      @unique @default(autoincrement())
+  // Human-facing report code — SR + YYMMDD + a 2-digit daily sequence shared across all
+  // doctors (e.g. "SR26090401"), assigned once at creation and never recomputed —
+  // displayed identically everywhere (lists, detail pages, PDFs, admin) instead of each
+  // surface deriving its own ad-hoc label from reportNumber/id. Nullable only so existing
+  // rows created before this field existed don't break; a backfill script fills those in.
+  reportCode    String?  @unique
   patientId     String
   patientName   String
   doctorId      String
@@ -82,6 +88,10 @@ model DetailedAnalysis {
   patientId        String
   doctorId         String
   reportId         String?
+  // Human-facing report code — DA + YYMMDD + a 2-digit daily sequence shared across all
+  // doctors (e.g. "DA26090401"). Named differently from `reportId` above on purpose:
+  // that field is the FK to the linked screening Report, an unrelated concept.
+  reportCode       String?  @unique
   testName         String
   clinicalSummary  String
   testFindings     String

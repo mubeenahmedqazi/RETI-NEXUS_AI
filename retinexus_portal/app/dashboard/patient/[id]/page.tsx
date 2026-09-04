@@ -258,6 +258,7 @@ export default function PatientDetailPage() {
                             patientAge={patient.age}
                             patientGender={patient.gender}
                             reportNumber={report.reportNumber}
+                            reportCode={report.reportCode}
                           />
                           <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
                             <Button variant="secondary" size="sm" icon={<Download className="w-4 h-4" />} className="text-xs" onClick={() => window.print()}>
@@ -357,7 +358,7 @@ export default function PatientDetailPage() {
                       >
                         <div id="pdf-detailed-analysis-content" className="p-4 space-y-4">
                           <ClinicalReportHeader
-                            reportId={`DA-${analysis.id.slice(-8).toUpperCase()}`}
+                            reportId={analysis.reportCode || `DA-${analysis.id.slice(-8).toUpperCase()}`}
                             patientName={patient.name}
                             patientAge={patient.age}
                             patientGender={patient.gender}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/db'
+import { generateDetailedAnalysisReportCode } from '@/lib/reportCode'
 
 // POST - save (approve) a Detailed Analysis report against a patient, for doctors only
 export async function POST(req: NextRequest) {
@@ -42,8 +43,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Patient not found' }, { status: 404 })
     }
 
+    const reportCode = await generateDetailedAnalysisReportCode()
     const analysis = await prisma.detailedAnalysis.create({
       data: {
+        reportCode,
         patientId,
         doctorId: docId,
         reportId: reportId || null,

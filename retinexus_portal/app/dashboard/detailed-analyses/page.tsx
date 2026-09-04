@@ -16,6 +16,7 @@ interface SavedDetailedAnalysis {
   id: string;
   patientId: string;
   reportId: string | null;
+  reportCode: string | null;
   testName: string;
   clinicalSummary: string;
   testFindings: string;
@@ -135,9 +136,7 @@ export default function DetailedAnalysesPage() {
                         </div>
                       </div>
                     </div>
-                    {analysis.report?.reportNumber && (
-                      <Badge tone="neutral">RN-{String(analysis.report.reportNumber).padStart(6, '0')}</Badge>
-                    )}
+                    <Badge tone="neutral">{analysis.reportCode || `DA-${analysis.id.slice(-8).toUpperCase()}`}</Badge>
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0">
@@ -207,7 +206,7 @@ export default function DetailedAnalysesPage() {
                   }}
                   testName={selected.testName}
                   analyzedAt={selected.createdAt}
-                  reportIdLabel={`DA-${selected.id.slice(-8).toUpperCase()}`}
+                  reportIdLabel={selected.reportCode || `DA-${selected.id.slice(-8).toUpperCase()}`}
                   patientName={selected.patient?.name}
                   patientAge={selected.patient?.age}
                   patientGender={selected.patient?.gender}

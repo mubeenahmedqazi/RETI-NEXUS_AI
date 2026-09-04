@@ -16,6 +16,7 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 interface SavedReport {
   id: string;
   reportNumber: number;
+  reportCode: string | null;
   patientId: string;
   patientName: string;
   drGrade: string;
@@ -142,7 +143,7 @@ export default function ReportsPage() {
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                       <Badge tone={gradeToTone(report.drGrade)}>{report.drGrade || 'N/A'}</Badge>
-                      <Badge tone="neutral">RN-{String(report.reportNumber).padStart(6, '0')}</Badge>
+                      <Badge tone="neutral">{report.reportCode || `RN-${String(report.reportNumber).padStart(6, '0')}`}</Badge>
                     </div>
                   </div>
 
@@ -218,6 +219,7 @@ export default function ReportsPage() {
                   patientAge={selectedReport.patient?.age}
                   patientGender={selectedReport.patient?.gender}
                   reportNumber={selectedReport.reportNumber}
+                  reportCode={selectedReport.reportCode}
                 />
                 <div className="flex justify-center mt-8 pb-2">
                   <Button variant="outline" icon={<X className="w-4 h-4" />} onClick={closeReportModal} className="min-w-[140px]">

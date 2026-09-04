@@ -12,6 +12,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import Button from '@/components/Common/Button';
 import { Swirling } from '@/components/ui/Swirling';
 import { findPatientsByPhone, runLongitudinalHistoryAnalysis, MatchedPatient, LongitudinalInsights } from '@/services/api';
+import LongitudinalAnalysis from '@/components/Patient/LongitudinalAnalysis';
 
 type Stage = 'search' | 'pick' | 'loading' | 'results';
 
@@ -23,6 +24,8 @@ export default function LongitudinalHistoryPage() {
   const [matches, setMatches] = useState<MatchedPatient[]>([]);
   const [selected, setSelected] = useState<MatchedPatient | null>(null);
   const [insights, setInsights] = useState<LongitudinalInsights | null>(null);
+  const [patientReports, setPatientReports] = useState<any[]>([]);
+  const [trendRecommendation, setTrendRecommendation] = useState<string | null>(null);
 
   const handleSearch = async () => {
     if (!phone.trim()) return;
@@ -54,6 +57,19 @@ export default function LongitudinalHistoryPage() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to run longitudinal analysis.');
       setStage('search');
+      return;
+    }
+    // Supplementary DR-grade / systemic-risk trend charts — feeds off the patient's raw
+    // reports, fetched separately from the LLM insights above; failing silently here
+    // shouldn't block the insights the doctor already has.
+    try {
+      const response = await fetch(`/api/patients/${encodeURIComponent(patient.id)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPatientReports(data.patient?.reports || []);
+      }
+    } catch {
+      setPatientReports([]);
     }
   };
 
@@ -63,6 +79,8 @@ export default function LongitudinalHistoryPage() {
     setMatches([]);
     setSelected(null);
     setInsights(null);
+    setPatientReports([]);
+    setTrendRecommendation(null);
     setError('');
   };
 
@@ -97,7 +115,7 @@ export default function LongitudinalHistoryPage() {
                   style={{ borderColor: 'var(--border)', color: 'var(--foreground)' }}
                 />
               </div>
-              <Button variant="primary" glow icon={searching ? <Swirling className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />} onClick={handleSearch} disabled={searching || !phone.trim()}>
+              <Button variant="primary" glow icon={searching ? <Swirling className="w-4 h-4" /> : null} onClick={handleSearch} disabled={searching || !phone.trim()}>
                 {searching ? 'Searching...' : 'Find Account'}
               </Button>
             </div>
@@ -166,6 +184,10 @@ export default function LongitudinalHistoryPage() {
               </p>
             </div>
 
+            {patientReports.length >= 2 && (
+              <LongitudinalAnalysis reports={patientReports} hideRecommendation onRecommendation={setTrendRecommendation} />
+            )}
+
             <div className="grid md:grid-cols-3 gap-4">
               <div className="surface rounded-2xl p-5">
                 <h3 className="text-sm font-semibold flex items-center gap-2 mb-3" style={{ color: 'var(--foreground)' }}>
@@ -223,6 +245,23 @@ export default function LongitudinalHistoryPage() {
             </div>
 
             <p className="text-xs text-center italic" style={{ color: 'var(--subtle-foreground)' }}>{insights.disclaimer}</p>
+
+            {trendRecommendation && (
+              <div
+                className="rounded-2xl p-5 border"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--brand-accent) 30%, transparent)',
+                  background: 'color-mix(in srgb, var(--brand-accent) 6%, transparent)',
+                }}
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--brand-accent)' }}>
+                  Recommendation
+                </p>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--foreground)' }}>
+                  {trendRecommendation}
+                </p>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

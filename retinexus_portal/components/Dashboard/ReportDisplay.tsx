@@ -29,9 +29,12 @@ interface ReportDisplayProps {
   patientId?: string;
   patientAge?: number | string;
   patientGender?: string;
-  /** Saved report's globally-unique sequence number (from the DB). Falls back to the
-   * backend-generated preview id when the report hasn't been saved yet. */
+  /** Legacy saved-report sequence number (from the DB) — kept only as a display fallback
+   * for rows saved before `reportCode` existed. */
   reportNumber?: number;
+  /** The human-facing report code (e.g. "SR26090401"), stored once at save time and shown
+   * identically everywhere. Absent before the report is actually saved. */
+  reportCode?: string | null;
   /** Shows just the Download PDF button even when hideActions hides Approve/Detailed
    * Analysis — for read-only report-list views where re-approving or re-running a
    * Detailed Analysis on an already-saved report doesn't make sense. */
@@ -68,6 +71,7 @@ export default function ReportDisplay({
   patientAge: propPatientAge,
   patientGender: propPatientGender,
   reportNumber,
+  reportCode: propReportCode,
   showDownloadOnly = false,
   autoDownload = false,
 }: ReportDisplayProps) {
@@ -82,6 +86,7 @@ export default function ReportDisplay({
   const [patientAge, setPatientAge] = useState<number | string>(propPatientAge ?? '');
   const [patientGender, setPatientGender] = useState<string>(propPatientGender || '');
   const [showCompare, setShowCompare] = useState(false);
+  const [savedReportCode, setSavedReportCode] = useState<string | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -259,6 +264,7 @@ export default function ReportDisplay({
 
       if (result.success) {
         setIsApproved(true);
+        setSavedReportCode(result.report?.reportCode || null);
         toast.success(`Report approved and saved successfully for ${patientName}!`, { position: 'top-right', autoClose: 4000 });
       }
     } catch (error: any) {
@@ -285,11 +291,18 @@ export default function ReportDisplay({
   const enhancedUrl = getImageUrl(report.images?.enhanced) || (report.imageUrl?.startsWith('http') ? report.imageUrl : null);
   const gradcamUrl = getImageUrl(report.images?.gradcam);
 
+  // Same code shown everywhere for this report (list, detail page, PDF) — the stored
+  // reportCode once saved (either passed in as a prop, or just-minted by handleApprove),
+  // a legacy RN- number for pre-reportCode rows, or an explicit "not saved yet" placeholder
+  // rather than a fabricated id that would differ from the real one once saved.
+  const displayReportId =
+    savedReportCode || propReportCode || (reportNumber ? `RN-${String(reportNumber).padStart(6, '0')}` : 'Pending — Not Yet Saved');
+
   return (
     <>
       <div ref={reportRef} id="pdf-report-content" className="space-y-6 p-2">
         <ClinicalReportHeader
-          reportId={reportNumber ? `RN-${String(reportNumber).padStart(6, '0')}` : report.id}
+          reportId={displayReportId}
           patientName={patientName}
           patientAge={patientAge}
           patientGender={patientGender}
@@ -612,9 +625,9 @@ export default function ReportDisplay({
                 Analysis Output Images
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 image-output-grid">
-                {IMAGE_ORDER.filter((key) => report.images?.[key]).map((key) => {
-                  const filename = report.images![key];
-                  const imageUrl = getImageUrl(filename as string);
+                {IMAGE_ORDER.map((key) => {
+                  const filename = report.images?.[key];
+                  const imageUrl = filename ? getImageUrl(filename as string) : null;
 
                   if (!imageUrl) {
                     return (
@@ -648,9 +661,12 @@ export default function ReportDisplay({
                           <ZoomIn className="w-4 h-4 text-white/0 group-hover:text-white/90 transition-colors duration-300" />
                         </div>
                       </div>
-                      {/* Always-visible caption — required for both screen and print/PDF output */}
-                      <div className="px-3 py-2 border-t text-center" style={{ borderColor: 'var(--border)', background: 'var(--muted)' }}>
-                        <p className="text-xs font-semibold" style={{ color: 'var(--foreground)' }}>
+                      {/* Always-visible caption — hardcoded (not theme-variable) colors on
+                          purpose: this is the printed report, always a formal white/dark-navy
+                          document regardless of the on-screen theme, so the name must never
+                          depend on --foreground/--muted resolving correctly through print. */}
+                      <div className="px-3 py-2 border-t text-center" style={{ borderColor: '#cbd5e1', background: '#eef2f6' }}>
+                        <p className="text-xs font-semibold" style={{ color: '#0f172a' }}>
                           {imageLabels[key] || key.replace('_', ' ')}
                         </p>
                       </div>

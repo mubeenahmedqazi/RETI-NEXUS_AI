@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Phone, Cake, User as UserIcon, MapPin, Droplet, Stethoscope, FileText, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, Phone, Cake, User as UserIcon, MapPin, Stethoscope, FileText, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
@@ -17,6 +17,7 @@ import type { Patient, DoctorOption } from '../types';
 interface ReportSummary {
   id: string;
   reportNumber: number;
+  reportCode: string | null;
   drGrade: string;
   confidence: number;
   description: string;
@@ -27,6 +28,7 @@ interface ReportSummary {
 
 interface DetailedAnalysisSummary {
   id: string;
+  reportCode: string | null;
   testName: string;
   clinicalSummary: string;
   urgency: string;
@@ -127,9 +129,6 @@ export default function PatientDetailPage() {
         <div className="text-sm flex items-center gap-2" style={{ color: 'var(--muted-foreground)' }}>
           <UserIcon className="w-3.5 h-3.5 flex-shrink-0" /> {patient.gender || '—'}
         </div>
-        <div className="text-sm flex items-center gap-2" style={{ color: 'var(--muted-foreground)' }}>
-          <Droplet className="w-3.5 h-3.5 flex-shrink-0" /> {patient.diabetesLevel || '—'}
-        </div>
         <div className="text-sm flex items-center gap-2 sm:col-span-2 lg:col-span-4" style={{ color: 'var(--muted-foreground)' }}>
           <MapPin className="w-3.5 h-3.5 flex-shrink-0" /> {patient.address || '—'}
         </div>
@@ -160,7 +159,7 @@ export default function PatientDetailPage() {
                       style={{ borderColor: 'var(--border)' }}
                       onClick={() => router.push(`/dashboard/reports/${r.id}`)}
                     >
-                      <td className="px-5 py-3.5 font-medium hover:underline" style={{ color: 'var(--brand-secondary)' }}>{formatReportId(r.reportNumber)}</td>
+                      <td className="px-5 py-3.5 font-medium hover:underline" style={{ color: 'var(--brand-secondary)' }}>{formatReportId(r)}</td>
                       <td className="px-5 py-3.5">
                         <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: 'var(--muted)', color: GRADE_COLOR[r.drGrade] || 'var(--foreground)' }}>
                           {r.drGrade}
@@ -185,32 +184,41 @@ export default function PatientDetailPage() {
         {patient.detailedAnalyses.length === 0 ? (
           <EmptyState icon={Stethoscope} title="No detailed analyses" description="No follow-up test analysis has been recorded for this patient." />
         ) : (
-          <div className="space-y-3">
-            {patient.detailedAnalyses.map((d) => (
-              <div
-                key={d.id}
-                className="surface rounded-2xl p-5 hover:border-[var(--brand-accent)]/40 hover:shadow-lg transition-all duration-200 cursor-pointer"
-                onClick={() => router.push(`/dashboard/detailed-analyses/${d.id}`)}
-              >
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <p className="font-semibold truncate" style={{ color: 'var(--foreground)' }}>{d.testName}</p>
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0" style={{ background: 'var(--muted)', color: 'var(--brand-secondary)' }}>
-                      {formatAnalysisId(d.id)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {d.redFlags.length > 0 && (
-                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-red-500/10 text-red-500">
-                        <AlertTriangle className="w-3 h-3" /> {d.redFlags.length} red flag{d.redFlags.length === 1 ? '' : 's'}
-                      </span>
-                    )}
-                    <span className="text-xs" style={{ color: 'var(--subtle-foreground)' }}>{new Date(d.createdAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
-                <p className="text-sm mt-2" style={{ color: 'var(--muted-foreground)' }}>{d.clinicalSummary}</p>
-              </div>
-            ))}
+          <div className="surface rounded-2xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b" style={{ borderColor: 'var(--border)' }}>
+                    {['Report ID', 'Test Name', 'Red Flags', 'Date'].map((h) => (
+                      <th key={h} className="text-left px-5 py-3 font-medium" style={{ color: 'var(--muted-foreground)' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {patient.detailedAnalyses.map((d) => (
+                    <tr
+                      key={d.id}
+                      className="border-b last:border-0 hover:bg-[var(--muted)]/50 transition-colors cursor-pointer"
+                      style={{ borderColor: 'var(--border)' }}
+                      onClick={() => router.push(`/dashboard/detailed-analyses/${d.id}`)}
+                    >
+                      <td className="px-5 py-3.5 font-medium hover:underline" style={{ color: 'var(--brand-secondary)' }}>{formatAnalysisId(d)}</td>
+                      <td className="px-5 py-3.5" style={{ color: 'var(--muted-foreground)' }}>{d.testName}</td>
+                      <td className="px-5 py-3.5">
+                        {d.redFlags.length > 0 ? (
+                          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-red-500/10 text-red-500">
+                            <AlertTriangle className="w-3 h-3" /> {d.redFlags.length}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--subtle-foreground)' }}>—</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 text-xs" style={{ color: 'var(--subtle-foreground)' }}>{new Date(d.createdAt).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

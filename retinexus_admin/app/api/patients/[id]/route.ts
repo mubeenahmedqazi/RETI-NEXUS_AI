@@ -10,7 +10,6 @@ interface PatientPatchBody {
   age?: number | null;
   gender?: string | null;
   address?: string | null;
-  diabetesLevel?: string | null;
   doctorId?: string | null;
 }
 
@@ -29,7 +28,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       age: true,
       gender: true,
       address: true,
-      diabetesLevel: true,
       doctorId: true,
       createdAt: true,
       doctor: { select: { id: true, name: true } },
@@ -37,6 +35,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         select: {
           id: true,
           reportNumber: true,
+          reportCode: true,
           drGrade: true,
           confidence: true,
           description: true,
@@ -49,6 +48,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       detailedAnalyses: {
         select: {
           id: true,
+          reportCode: true,
           testName: true,
           clinicalSummary: true,
           urgency: true,
@@ -86,7 +86,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (body.age !== undefined) data.age = body.age;
   if (body.gender !== undefined) data.gender = body.gender;
   if (body.address !== undefined) data.address = body.address;
-  if (body.diabetesLevel !== undefined) data.diabetesLevel = body.diabetesLevel;
   if (body.doctorId !== undefined) data.doctorId = body.doctorId;
 
   const patient = await prisma.patient.update({
@@ -99,7 +98,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       age: true,
       gender: true,
       address: true,
-      diabetesLevel: true,
       doctorId: true,
       doctor: { select: { id: true, name: true } },
     },

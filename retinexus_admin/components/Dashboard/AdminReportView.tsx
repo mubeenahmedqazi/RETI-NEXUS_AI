@@ -396,9 +396,9 @@ export default function AdminReportView({ report, reportId, patientName, patient
                 Analysis Output Images
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 image-output-grid">
-                {IMAGE_ORDER.filter((key) => report.images?.[key]).map((key) => {
-                  const filename = report.images![key];
-                  const imageUrl = getImageUrl(filename as string);
+                {IMAGE_ORDER.map((key) => {
+                  const filename = report.images?.[key];
+                  const imageUrl = filename ? getImageUrl(filename as string) : null;
                   if (!imageUrl) {
                     return (
                       <div key={key} className="p-4 rounded-xl border text-center" style={{ borderColor: 'var(--border)', background: 'var(--muted)' }}>
@@ -429,8 +429,8 @@ export default function AdminReportView({ report, reportId, patientName, patient
                           <ZoomIn className="w-4 h-4 text-white/0 group-hover:text-white/90 transition-colors duration-300" />
                         </div>
                       </div>
-                      <div className="px-3 py-2 border-t text-center" style={{ borderColor: 'var(--border)', background: 'var(--muted)' }}>
-                        <p className="text-xs font-semibold" style={{ color: 'var(--foreground)' }}>{imageLabels[key] || key.replace('_', ' ')}</p>
+                      <div className="px-3 py-2 border-t text-center" style={{ borderColor: '#cbd5e1', background: '#eef2f6' }}>
+                        <p className="text-xs font-semibold" style={{ color: '#0f172a' }}>{imageLabels[key] || key.replace('_', ' ')}</p>
                       </div>
                     </motion.div>
                   );

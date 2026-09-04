@@ -15,6 +15,7 @@ import type { ReportData } from '@/types/report';
 
 interface AnalysisApiResponse {
   id: string;
+  reportCode: string | null;
   patientId: string;
   testName: string;
   clinicalSummary: string;
@@ -26,7 +27,7 @@ interface AnalysisApiResponse {
   extractionMethod: string | null;
   createdAt: string;
   doctor: { id: string; name: string } | null;
-  report: { id: string; reportNumber: number; reportData: ReportData } | null;
+  report: { id: string; reportNumber: number; reportCode: string | null; reportData: ReportData } | null;
 }
 
 export default function DetailedAnalysisDetailPage() {
@@ -90,7 +91,7 @@ export default function DetailedAnalysisDetailPage() {
         title={analysis.testName}
         description={
           analysis.report
-            ? `${patientName || ''}, linked to Screening Report ${formatReportId(analysis.report.reportNumber)}`.replace(/^, /, '')
+            ? `${patientName || ''}, linked to Screening Report ${formatReportId(analysis.report)}`.replace(/^, /, '')
             : patientName
         }
         actions={
@@ -117,7 +118,7 @@ export default function DetailedAnalysisDetailPage() {
         }}
         testName={analysis.testName}
         analyzedAt={analysis.createdAt}
-        reportIdLabel={formatAnalysisId(analysis.id)}
+        reportIdLabel={formatAnalysisId(analysis)}
         patientName={patientName}
         patientAge={patientAge}
         patientGender={patientGender}

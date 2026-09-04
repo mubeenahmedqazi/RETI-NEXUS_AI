@@ -96,7 +96,7 @@ export default function About() {
       <section className="py-16 px-6 border-t" style={{ borderColor: 'var(--border)' }}>
         <div className="max-w-4xl mx-auto text-center">
           <ScrollReveal>
-            <Sparkles className="w-8 h-8 text-[var(--brand-secondary)] mx-auto mb-4" />
+            
             <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--foreground)' }}>
               Why we started with the eye
             </h2>
