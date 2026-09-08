@@ -7,13 +7,11 @@ import {
   Clock,
   MapPin,
   AlertTriangle,
-  HeartPulse,
-  Bean,
-  Brain,
   Eye,
   Activity,
   ShieldAlert,
 } from 'lucide-react';
+import { Eye as OrganEye, HeartOrgan, Kidneys, Neurology } from 'healthicons-react/outline';
 import AnimatedCounter from '@/components/ui/AnimatedCounter';
 import GlassCard from '@/components/ui/GlassCard';
 import ScrollReveal from './ScrollReveal';
@@ -199,27 +197,27 @@ const timeline = [
     years: 'Years 1 to 5',
     label: 'Silent onset',
     points: [
-      { icon: Eye, organ: 'Eyes', text: 'Retinal microvasculature begins weakening, usually invisible without a fundus exam.' },
-      { icon: HeartPulse, organ: 'Heart', text: 'Blood vessels stiffen; cardiovascular risk starts climbing before any symptoms.' },
+      { icon: OrganEye, organ: 'Eyes', text: 'Retinal microvasculature begins weakening, usually invisible without a fundus exam.' },
+      { icon: HeartOrgan, organ: 'Heart', text: 'Blood vessels stiffen; cardiovascular risk starts climbing before any symptoms.' },
     ],
   },
   {
     years: 'Years 5 to 10',
     label: 'Measurable damage',
     points: [
-      { icon: Eye, organ: 'Eyes', text: 'Microaneurysms and early haemorrhages become detectable: this is early-stage diabetic retinopathy.' },
-      { icon: Bean, organ: 'Kidneys', text: 'Protein begins leaking into urine as filtering vessels in the kidneys sustain damage.' },
-      { icon: Brain, organ: 'Brain & Nerves', text: 'Peripheral neuropathy sets in; circulation to the brain’s small vessels is already affected.' },
+      { icon: OrganEye, organ: 'Eyes', text: 'Microaneurysms and early haemorrhages become detectable: this is early-stage diabetic retinopathy.' },
+      { icon: Kidneys, organ: 'Kidneys', text: 'Protein begins leaking into urine as filtering vessels in the kidneys sustain damage.' },
+      { icon: Neurology, organ: 'Brain & Nerves', text: 'Peripheral neuropathy sets in; circulation to the brain’s small vessels is already affected.' },
     ],
   },
   {
     years: 'Years 10 to 15+',
     label: 'Advanced complications',
     points: [
-      { icon: Eye, organ: 'Eyes', text: 'Proliferative retinopathy risks sudden, severe vision loss without intervention.' },
-      { icon: HeartPulse, organ: 'Heart', text: 'Risk of heart attack is 2 to 4 times higher than in someone without diabetes.' },
-      { icon: Bean, organ: 'Kidneys', text: 'Diabetic nephropathy is the leading cause of kidney failure and dialysis worldwide.' },
-      { icon: Brain, organ: 'Brain', text: 'Stroke risk rises sharply, and vascular damage is linked to accelerated cognitive decline.' },
+      { icon: OrganEye, organ: 'Eyes', text: 'Proliferative retinopathy risks sudden, severe vision loss without intervention.' },
+      { icon: HeartOrgan, organ: 'Heart', text: 'Risk of heart attack is 2 to 4 times higher than in someone without diabetes.' },
+      { icon: Kidneys, organ: 'Kidneys', text: 'Diabetic nephropathy is the leading cause of kidney failure and dialysis worldwide.' },
+      { icon: Neurology, organ: 'Brain', text: 'Stroke risk rises sharply, and vascular damage is linked to accelerated cognitive decline.' },
     ],
   },
 ];
@@ -269,7 +267,7 @@ function OrganTimeline() {
                       className="rounded-xl p-4 border h-full"
                       style={{ borderColor: 'var(--border)', background: 'var(--card)' }}
                     >
-                      <p.icon className="w-5 h-5 text-[var(--brand-accent)] mb-2.5" />
+                      <p.icon className="w-7 h-7 text-[var(--brand-accent)] mb-2.5" />
                       <p className="font-semibold text-sm" style={{ color: 'var(--foreground)' }}>{p.organ}</p>
                       <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>{p.text}</p>
                     </div>

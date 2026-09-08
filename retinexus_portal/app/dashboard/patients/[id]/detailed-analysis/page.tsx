@@ -6,10 +6,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, UploadCloud, FileText, FileWarning, X, Sparkles,
   CheckCircle2, AlertTriangle, AlertOctagon, Stethoscope, Calendar, Eye,
-  ClipboardList, RefreshCw, Download, ShieldAlert, Brain, Heart, Bean,
+  ClipboardList, RefreshCw, Download, ShieldAlert,
   Image as ImageIcon, ZoomIn, Check, ChevronRight, TrendingUp, TrendingDown, Minus, GitBranch,
   type LucideIcon,
 } from 'lucide-react';
+import { HeartOrgan, Kidneys, Neurology } from 'healthicons-react/outline';
 import { format } from 'date-fns';
 import { toast } from 'react-toastify';
 import Button from '@/components/Common/Button';
@@ -624,13 +625,13 @@ export default function DetailedAnalysisPage() {
                 {(viewingDetailedAnalysis.organFindings?.heart || viewingDetailedAnalysis.organFindings?.kidney || viewingDetailedAnalysis.organFindings?.brain) && (
                   <div className="grid sm:grid-cols-3 gap-3">
                     {[
-                      { key: 'heart', label: 'Heart', icon: Heart, text: viewingDetailedAnalysis.organFindings?.heart },
-                      { key: 'kidney', label: 'Kidney', icon: Bean, text: viewingDetailedAnalysis.organFindings?.kidney },
-                      { key: 'brain', label: 'Brain', icon: Brain, text: viewingDetailedAnalysis.organFindings?.brain },
+                      { key: 'heart', label: 'Heart', icon: HeartOrgan, text: viewingDetailedAnalysis.organFindings?.heart },
+                      { key: 'kidney', label: 'Kidney', icon: Kidneys, text: viewingDetailedAnalysis.organFindings?.kidney },
+                      { key: 'brain', label: 'Brain', icon: Neurology, text: viewingDetailedAnalysis.organFindings?.brain },
                     ].map((o) => o.text && (
                       <div key={o.key} className="pl-3 border-l-2" style={{ borderColor: 'var(--brand-secondary)' }}>
                         <p className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--foreground)' }}>
-                          <o.icon className="w-3 h-3 text-[var(--brand-secondary)]" />
+                          <o.icon className="w-5 h-5 text-[var(--brand-secondary)]" />
                           {o.label}
                         </p>
                         <p className="text-xs leading-relaxed mt-1" style={{ color: 'var(--muted-foreground)' }}>{o.text}</p>

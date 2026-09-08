@@ -1,20 +1,21 @@
 'use client';
 
-import { Eye, HeartPulse, Bean, ShieldCheck, Sparkles } from 'lucide-react';
+import { ShieldCheck, Sparkles } from 'lucide-react';
+import { Eye, HeartOrgan, Kidneys } from 'healthicons-react/outline';
 import GlassCard from '@/components/ui/GlassCard';
 import ScrollReveal from './ScrollReveal';
 
 const organs = [
   { icon: Eye, title: 'Retina', desc: 'Vessel tortuosity, density & lesions read directly from the fundus image.' },
-  { icon: HeartPulse, title: 'Heart', desc: 'Vascular damage patterns shared with cardiovascular risk pathways.' },
-  { icon: Bean, title: 'Kidneys', desc: 'Microvascular changes that often mirror early diabetic nephropathy.' },
+  { icon: HeartOrgan, title: 'Heart', desc: 'Vascular damage patterns shared with cardiovascular risk pathways.' },
+  { icon: Kidneys, title: 'Kidneys', desc: 'Microvascular changes that often mirror early diabetic nephropathy.' },
   { icon: ShieldCheck, title: 'Early Warning', desc: 'Non-invasive, low-cost, and fast enough for routine screening.' },
 ];
 
 const badges = [
   { icon: Eye, label: 'Diabetic Retinopathy' },
-  { icon: HeartPulse, label: 'Cardiac Risk Signal' },
-  { icon: Bean, label: 'Renal Risk Signal' },
+  { icon: HeartOrgan, label: 'Cardiac Risk Signal' },
+  { icon: Kidneys, label: 'Renal Risk Signal' },
 ];
 
 export default function About() {
@@ -45,7 +46,7 @@ export default function About() {
                   className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-md bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10"
                   style={{ color: 'var(--foreground)' }}
                 >
-                  <b.icon className="w-4 h-4 text-[var(--brand-secondary)]" /> {b.label}
+                  <b.icon className="w-6 h-6 text-[var(--brand-secondary)]" /> {b.label}
                 </span>
               ))}
             </div>
@@ -84,7 +85,7 @@ export default function About() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1, duration: 0.5 }}
               >
-                <c.icon className="w-6 h-6 text-[var(--brand-accent)] mb-3" />
+                <c.icon className="w-9 h-9 text-[var(--brand-accent)] mb-3" />
                 <h3 className="font-semibold" style={{ color: 'var(--foreground)' }}>{c.title}</h3>
                 <p className="text-xs mt-1.5 leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>{c.desc}</p>
               </GlassCard>

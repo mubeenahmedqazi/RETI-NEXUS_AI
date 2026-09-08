@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Bean, Eye, HeartPulse, Brain, Activity, ArrowRight } from 'lucide-react';
+import { Activity, ArrowRight } from 'lucide-react';
+import { Eye, HeartOrgan, Kidneys, Neurology } from 'healthicons-react/outline';
 import ScrollReveal from './ScrollReveal';
 
 const stages = [
@@ -14,9 +15,9 @@ const stages = [
 
 const systemicEffects = [
   { icon: Eye, label: 'Eyes' },
-  { icon: HeartPulse, label: 'Heart' },
-  { icon: Bean, label: 'Kidneys' },
-  { icon: Brain, label: 'Nerves' },
+  { icon: HeartOrgan, label: 'Heart' },
+  { icon: Kidneys, label: 'Kidneys' },
+  { icon: Neurology, label: 'Nerves' },
 ];
 
 export default function WhatIsDR() {
@@ -72,7 +73,7 @@ export default function WhatIsDR() {
               {systemicEffects.map((e) => (
                 <div key={e.label} className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-[var(--brand-secondary)]/10 to-[var(--brand-accent)]/10">
-                    <e.icon className="w-4 h-4 text-[var(--brand-accent)]" />
+                    <e.icon className="w-6 h-6 text-[var(--brand-accent)]" />
                   </div>
                   <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>{e.label}</span>
                 </div>

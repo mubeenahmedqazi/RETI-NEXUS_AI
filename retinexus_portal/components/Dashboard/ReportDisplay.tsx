@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ComponentType } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Download, Microscope, Eye, Brain, Heart, Bean,
+  Download, Microscope, Eye, Brain, Heart,
   AlertTriangle, CheckCircle, Image as ImageIcon, Check, X, ZoomIn, GitCompare,
   FileText,
 } from 'lucide-react';
+import { HeartOrgan, Kidneys, Neurology } from 'healthicons-react/outline';
 import { ReportData, DetailedAnalysisContext } from '@/types/report';
 import Button from '../Common/Button';
 import { Swirling } from '../ui/Swirling';
@@ -56,10 +57,10 @@ const GRADE_INDEX: Record<string, number> = {
 // Per-organ heading metadata for the Report Interpretation section.
 // Eye/retina findings are already the subject of the main summary paragraph above,
 // so only the systemic organs get their own breakdown here.
-const ORGAN_SECTIONS: { key: 'heart' | 'kidney' | 'brain'; label: string; icon: typeof Heart }[] = [
-  { key: 'heart', label: 'Heart Health', icon: Heart },
-  { key: 'kidney', label: 'Kidney Health', icon: Bean },
-  { key: 'brain', label: 'Brain Health', icon: Brain },
+const ORGAN_SECTIONS: { key: 'heart' | 'kidney' | 'brain'; label: string; icon: ComponentType<{ className?: string }> }[] = [
+  { key: 'heart', label: 'Heart Health', icon: HeartOrgan },
+  { key: 'kidney', label: 'Kidney Health', icon: Kidneys },
+  { key: 'brain', label: 'Brain Health', icon: Neurology },
 ];
 
 export default function ReportDisplay({
@@ -541,7 +542,7 @@ export default function ReportDisplay({
                   return (
                     <div key={organ.key} className="pl-4 border-l-2" style={{ borderColor: 'var(--brand-secondary)' }}>
                       <h4 className="text-sm font-semibold flex items-center gap-1.5" style={{ color: 'var(--foreground)' }}>
-                        <organ.icon className="w-3.5 h-3.5 text-[var(--brand-secondary)]" />
+                        <organ.icon className="w-5 h-5 text-[var(--brand-secondary)]" />
                         {organ.label}
                       </h4>
                       <p className="text-sm leading-relaxed mt-1" style={{ color: 'var(--muted-foreground)' }}>

@@ -12,7 +12,7 @@ import { PORTAL_LOGIN_URL } from '@/lib/portal';
 const stats = [
   { value: 98.4, suffix: '%', label: 'Model sensitivity', decimals: 1 },
   { value: 5, suffix: '-stage', label: 'DR severity grading', decimals: 0 },
-  { value: 15, suffix: 's', label: 'Avg. analysis time', decimals: 0 },
+  { value: 25, suffix: 's', label: 'Avg. analysis time', decimals: 0 },
   { value: 9, suffix: '+', label: 'Biomarkers extracted', decimals: 0 },
 ];
 

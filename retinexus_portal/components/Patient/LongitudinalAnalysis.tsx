@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Heart, Bean, Brain, RefreshCw, AlertCircle } from 'lucide-react';
+import { RefreshCw, AlertCircle } from 'lucide-react';
+import { HeartOrgan, Kidneys, Neurology } from 'healthicons-react/outline';
 import { format } from 'date-fns';
 import { generateLongitudinalAnalysis } from '@/services/api';
 import { LongitudinalAnalysis as LongitudinalAnalysisData, LongitudinalVisit } from '@/types/report';
@@ -94,9 +95,9 @@ export default function LongitudinalAnalysis({ reports, hideRecommendation = fal
 
   const organRows = analysis
     ? [
-        { key: 'heartTrend', label: 'Heart', icon: Heart, text: analysis.heartTrend },
-        { key: 'kidneyTrend', label: 'Kidney', icon: Bean, text: analysis.kidneyTrend },
-        { key: 'brainTrend', label: 'Brain', icon: Brain, text: analysis.brainTrend },
+        { key: 'heartTrend', label: 'Heart', icon: HeartOrgan, text: analysis.heartTrend },
+        { key: 'kidneyTrend', label: 'Kidney', icon: Kidneys, text: analysis.kidneyTrend },
+        { key: 'brainTrend', label: 'Brain', icon: Neurology, text: analysis.brainTrend },
       ]
     : [];
 
@@ -199,7 +200,7 @@ export default function LongitudinalAnalysis({ reports, hideRecommendation = fal
                 o.text && (
                   <div key={o.key} className="pl-4 border-l-2" style={{ borderColor: 'var(--brand-secondary)' }}>
                     <h4 className="text-sm font-semibold flex items-center gap-1.5" style={{ color: 'var(--foreground)' }}>
-                      <o.icon className="w-3.5 h-3.5 text-[var(--brand-secondary)]" />
+                      <o.icon className="w-5 h-5 text-[var(--brand-secondary)]" />
                       {o.label}
                     </h4>
                     <p className="text-sm leading-relaxed mt-1" style={{ color: 'var(--muted-foreground)' }}>

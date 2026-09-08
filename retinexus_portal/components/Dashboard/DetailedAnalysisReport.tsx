@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText, AlertTriangle, AlertOctagon, Stethoscope, Eye,
-  ClipboardList, Brain, Heart, Bean, Image as ImageIcon, ZoomIn, X, Check,
+  ClipboardList, Brain, Image as ImageIcon, ZoomIn, X, Check,
   TrendingUp, TrendingDown, Minus, GitBranch, CheckCircle2, Download,
   type LucideIcon,
 } from 'lucide-react';
+import { HeartOrgan, Kidneys, Neurology } from 'healthicons-react/outline';
 import { format } from 'date-fns';
 import Button from '@/components/Common/Button';
 import BiomarkerCard from '@/components/ui/BiomarkerCard';
@@ -293,13 +294,13 @@ export default function DetailedAnalysisReport({
             </h3>
             <div className="grid sm:grid-cols-3 gap-4">
               {[
-                { key: 'heart', label: 'Heart', icon: Heart, text: result.organFindings.heart },
-                { key: 'kidney', label: 'Kidney', icon: Bean, text: result.organFindings.kidney },
-                { key: 'brain', label: 'Brain', icon: Brain, text: result.organFindings.brain },
+                { key: 'heart', label: 'Heart', icon: HeartOrgan, text: result.organFindings.heart },
+                { key: 'kidney', label: 'Kidney', icon: Kidneys, text: result.organFindings.kidney },
+                { key: 'brain', label: 'Brain', icon: Neurology, text: result.organFindings.brain },
               ].map((o) => o.text && (
                 <div key={o.key} className="pl-4 border-l-2" style={{ borderColor: 'var(--brand-secondary)' }}>
                   <h4 className="text-sm font-semibold flex items-center gap-1.5" style={{ color: 'var(--foreground)' }}>
-                    <o.icon className="w-3.5 h-3.5 text-[var(--brand-secondary)]" />
+                    <o.icon className="w-5 h-5 text-[var(--brand-secondary)]" />
                     {o.label}
                   </h4>
                   <p className="text-sm leading-relaxed mt-1" style={{ color: 'var(--muted-foreground)' }}>{o.text}</p>

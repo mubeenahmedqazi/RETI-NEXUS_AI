@@ -24,6 +24,7 @@
     "dotenv": "^17.4.2",
     "firebase": "^12.18.0",
     "framer-motion": "^12.42.2",
+    "healthicons-react": "^3.5.0",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.14.0",
     "jose": "^6.2.3",

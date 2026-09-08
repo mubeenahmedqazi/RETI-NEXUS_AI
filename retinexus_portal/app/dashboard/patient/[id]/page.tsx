@@ -6,8 +6,9 @@ import {
   User, Phone, Calendar, MapPin, FileText,
   ArrowLeft, Clock, X,
   Search, Download, ChevronDown, ChevronUp,
-  Stethoscope, CheckCircle2, AlertTriangle, ClipboardList, Heart, Bean, Brain,
+  Stethoscope, CheckCircle2, AlertTriangle, ClipboardList,
 } from 'lucide-react';
+import { HeartOrgan, Kidneys, Neurology } from 'healthicons-react/outline';
 import { format } from 'date-fns';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
@@ -380,13 +381,13 @@ export default function PatientDetailPage() {
                           {(organFindings.heart || organFindings.kidney || organFindings.brain) && (
                             <div className="grid sm:grid-cols-3 gap-3">
                               {[
-                                { key: 'heart', label: 'Heart', icon: Heart, text: organFindings.heart },
-                                { key: 'kidney', label: 'Kidney', icon: Bean, text: organFindings.kidney },
-                                { key: 'brain', label: 'Brain', icon: Brain, text: organFindings.brain },
+                                { key: 'heart', label: 'Heart', icon: HeartOrgan, text: organFindings.heart },
+                                { key: 'kidney', label: 'Kidney', icon: Kidneys, text: organFindings.kidney },
+                                { key: 'brain', label: 'Brain', icon: Neurology, text: organFindings.brain },
                               ].map((o) => o.text && (
                                 <div key={o.key} className="pl-3 border-l-2" style={{ borderColor: 'var(--brand-secondary)' }}>
                                   <p className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--foreground)' }}>
-                                    <o.icon className="w-3 h-3 text-[var(--brand-secondary)]" />
+                                    <o.icon className="w-5 h-5 text-[var(--brand-secondary)]" />
                                     {o.label}
                                   </p>
                                   <p className="text-xs leading-relaxed mt-1" style={{ color: 'var(--muted-foreground)' }}>{o.text}</p>
