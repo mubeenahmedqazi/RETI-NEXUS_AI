@@ -84,6 +84,7 @@ app.add_middleware(
         "http://localhost:3001",
         "http://127.0.0.1:3001",
         "http://localhost:3002",
+        "http://172.21.120.146:3000",
         "http://127.0.0.1:3002",
         "https://reti-nexus-ai-portal.vercel.app",
         "https://reti-nexus-ai-admin.vercel.app",

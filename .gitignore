@@ -57,3 +57,7 @@ serviceAccountKey.json
 # index are user-supplied and can be large; keep the folder structure only.
 retinexus_website/knowledge/pdfs/*.pdf
 retinexus_website/data/eye-knowledge-index.json
+
+# Prisma schema & sensitive config files
+schema.prisma
+**/prisma/schema.prisma
